@@ -10,6 +10,11 @@ import { parseSpectrumText, runRamanPipeline } from './utils/ramanMath';
 import { parseReferenceExcelBuffer } from './utils/excelReference';
 import { parseOuluRamanDbYaml } from './utils/ouluRamanDb';
 import {
+  extractElementsFromMetadata,
+  parseRamanLabDatabaseBuffer,
+  RamanLabEntry
+} from './utils/ramanLabDatabase';
+import {
   exportAnalysisToCSV,
   exportSvgElementToPNG,
   exportSvgElementToSVG
@@ -37,6 +42,46 @@ const DEFAULT_CONFIG: ProcessingConfig = {
   fitShape: 'lorentzian'
 };
 
+function buildSeedRamanLabEntries(): RamanLabEntry[] {
+  return REFERENCE_MATERIALS.map((ref) => {
+    const sample = SAMPLE_DATASETS.find((s) => s.referenceId === ref.id);
+    const wavenumbers = sample
+      ? sample.x
+      : Array.from({ length: 400 }, (_, i) => 100 + i * 7.5);
+    const intensities = sample
+      ? sample.y
+      : wavenumbers.map((wn) => {
+          let val = 0;
+          for (const p of ref.peaks) {
+            val +=
+              p.relativeIntensity *
+              1000 *
+              (1 / (1 + Math.pow((wn - p.wavenumber) / 9, 2)));
+          }
+          return val;
+        });
+    const metadata: Record<string, string> = {
+      'MINERAL NAME': ref.name,
+      FORMULA: ref.formula,
+      'CHEMICAL FAMILY': ref.category
+    };
+    const { elements, formula, chemicalFamily, heyClassification } =
+      extractElementsFromMetadata(metadata, ref.name);
+
+    return {
+      name: ref.name,
+      wavenumbers,
+      intensities,
+      peaks: ref.peaks.map((p) => p.wavenumber),
+      metadata,
+      elements,
+      formula,
+      chemicalFamily,
+      heyClassification
+    };
+  });
+}
+
 export function App() {
   const [samples, setSamples] = useState<SampleDataset[]>(SAMPLE_DATASETS);
   const [activeSampleId, setActiveSampleId] = useState<string>(SAMPLE_DATASETS[0].id);
@@ -49,10 +94,17 @@ export function App() {
   );
   const [showReferenceOverlay, setShowReferenceOverlay] = useState<boolean>(true);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
+  const [ramanLabDb, setRamanLabDb] = useState<RamanLabEntry[]>(() =>
+    buildSeedRamanLabEntries()
+  );
+  const [dbSourcePath, setDbSourcePath] = useState<string>(
+    './RamanLab_Database_20250602.pkl'
+  );
+  const [isLoadingDb, setIsLoadingDb] = useState<boolean>(false);
 
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Automatically load ./reference_data.xlsx so user updates to the Excel file are reflected
+  // Automatically load ./reference_data.xlsx and ./RamanLab_Database_20250602.pkl if present
   useEffect(() => {
     fetch('./reference_data.xlsx')
       .then((res) => {
@@ -68,6 +120,29 @@ export function App() {
       })
       .catch(() => {
         // Fallback to built-in REFERENCE_MATERIALS if offline
+      });
+
+    fetch('./RamanLab_Database_20250602.pkl')
+      .then((res) => {
+        if (
+          !res.ok ||
+          (res.headers.get('content-type') || '').includes('text/html')
+        ) {
+          throw new Error('No local RamanLab_Database_20250602.pkl found');
+        }
+        return res.arrayBuffer();
+      })
+      .then((buffer) => {
+        const entries = parseRamanLabDatabaseBuffer(
+          buffer,
+          'RamanLab_Database_20250602.pkl'
+        );
+        if (entries.length > 0) {
+          setRamanLabDb(entries);
+        }
+      })
+      .catch(() => {
+        // Keep seed entries until user selects local .pkl or path
       });
   }, []);
 
@@ -186,6 +261,73 @@ export function App() {
     reader.readAsText(file);
   };
 
+  const handleLoadRamanLabFromFile = (file: File) => {
+    setIsLoadingDb(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const buffer = event.target?.result as ArrayBuffer;
+        const entries = parseRamanLabDatabaseBuffer(buffer, file.name);
+        if (entries.length === 0) {
+          throw new Error('No valid Raman spectra found in database file.');
+        }
+        setRamanLabDb(entries);
+        setDbSourcePath(file.name);
+        setErrorBanner(null);
+      } catch (err) {
+        setErrorBanner(
+          err instanceof Error
+            ? err.message
+            : 'Failed to parse RamanLab database (.pkl / .json).'
+        );
+      } finally {
+        setIsLoadingDb(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleLoadRamanLabFromPath = (pathOrUrl: string) => {
+    const clean = pathOrUrl.trim();
+    if (!clean) return;
+    setIsLoadingDb(true);
+    setDbSourcePath(clean);
+    fetch(clean)
+      .then((res) => {
+        if (
+          !res.ok ||
+          (res.headers.get('content-type') || '').includes('text/html')
+        ) {
+          throw new Error(
+            'Browser cannot directly read OS paths without file selection. Use "Browse Local .pkl" or place RamanLab_Database_20250602.pkl in public/.'
+          );
+        }
+        return res.arrayBuffer();
+      })
+      .then((buffer) => {
+        const entries = parseRamanLabDatabaseBuffer(buffer, clean);
+        if (entries.length === 0) {
+          throw new Error('No valid spectra found at specified path.');
+        }
+        setRamanLabDb(entries);
+        setErrorBanner(null);
+      })
+      .catch((err) => {
+        setErrorBanner(
+          err instanceof Error ? err.message : 'Unable to load database path.'
+        );
+      })
+      .finally(() => {
+        setIsLoadingDb(false);
+      });
+  };
+
+  const handleApplyRamanLabMatch = (ref: ReferenceMaterial) => {
+    setReferences((prev) => [ref, ...prev.filter((r) => r.id !== ref.id)]);
+    setSelectedReferenceId(ref.id);
+    setShowReferenceOverlay(true);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
       {/* Header Bar */}
@@ -297,12 +439,20 @@ export function App() {
 
           <PeakAnalysisPanel
             sampleName={activeSample.name}
+            queryX={activeSample.x}
+            queryY={pipelineResult.processedY}
             peaks={pipelineResult.peaks}
             selectedPeakId={selectedPeakId}
             onSelectPeak={setSelectedPeakId}
             references={references}
             selectedReferenceId={activeReference?.id || ''}
             onSelectReferenceId={setSelectedReferenceId}
+            ramanLabDb={ramanLabDb}
+            dbSourcePath={dbSourcePath}
+            isLoadingDb={isLoadingDb}
+            onLoadDbFromFile={handleLoadRamanLabFromFile}
+            onLoadDbFromPath={handleLoadRamanLabFromPath}
+            onApplyMatchAsReference={handleApplyRamanLabMatch}
           />
         </div>
       </main>

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { PeakData, ReferenceMaterial } from '../types/spectrum';
 import { generateCharacterizationSummary } from '../utils/exportUtils';
+import { RamanLabEntry } from '../utils/ramanLabDatabase';
+import { RamanLabSearchPanel } from './RamanLabSearchPanel';
 import {
   Table,
   Compass,
@@ -8,29 +10,46 @@ import {
   Copy,
   Check,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Database
 } from 'lucide-react';
 
 interface PeakAnalysisPanelProps {
   sampleName: string;
+  queryX: number[];
+  queryY: number[];
   peaks: PeakData[];
   selectedPeakId: string | null;
   onSelectPeak: (id: string | null) => void;
   references: ReferenceMaterial[];
   selectedReferenceId: string;
   onSelectReferenceId: (id: string) => void;
+  ramanLabDb: RamanLabEntry[];
+  dbSourcePath: string;
+  isLoadingDb: boolean;
+  onLoadDbFromFile: (file: File) => void;
+  onLoadDbFromPath: (pathOrUrl: string) => void;
+  onApplyMatchAsReference: (ref: ReferenceMaterial) => void;
 }
 
 export const PeakAnalysisPanel: React.FC<PeakAnalysisPanelProps> = ({
   sampleName,
+  queryX,
+  queryY,
   peaks,
   selectedPeakId,
   onSelectPeak,
   references,
   selectedReferenceId,
-  onSelectReferenceId
+  onSelectReferenceId,
+  ramanLabDb,
+  dbSourcePath,
+  isLoadingDb,
+  onLoadDbFromFile,
+  onLoadDbFromPath,
+  onApplyMatchAsReference
 }) => {
-  const [activeTab, setActiveTab] = useState<'table' | 'reference' | 'summary'>('table');
+  const [activeTab, setActiveTab] = useState<'table' | 'ramanlab' | 'reference' | 'summary'>('table');
   const [copied, setCopied] = useState(false);
 
   const activeReference = references.find((r) => r.id === selectedReferenceId) || references[0];
@@ -60,6 +79,19 @@ export const PeakAnalysisPanel: React.FC<PeakAnalysisPanelProps> = ({
           >
             <Table className="w-3.5 h-3.5" />
             Peaks ({peaks.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('ramanlab')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              activeTab === 'ramanlab'
+                ? 'bg-gradient-to-r from-purple-600 to-violet-800 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <Database className="w-3.5 h-3.5" />
+            RamanLab DB ({ramanLabDb.length})
           </button>
 
           <button
@@ -193,7 +225,25 @@ export const PeakAnalysisPanel: React.FC<PeakAnalysisPanelProps> = ({
         </div>
       )}
 
-      {/* TAB 2: REFERENCE MATCH */}
+      {/* TAB 2: RAMANLAB DATABASE SCREENING */}
+      {activeTab === 'ramanlab' && (
+        <RamanLabSearchPanel
+          queryX={queryX}
+          queryY={queryY}
+          detectedPeaks={peaks}
+          ramanLabDb={ramanLabDb}
+          dbSourcePath={dbSourcePath}
+          isLoadingDb={isLoadingDb}
+          onLoadDbFromFile={onLoadDbFromFile}
+          onLoadDbFromPath={onLoadDbFromPath}
+          onApplyMatchAsReference={(ref) => {
+            onApplyMatchAsReference(ref);
+            setActiveTab('reference');
+          }}
+        />
+      )}
+
+      {/* TAB 3: REFERENCE MATCH */}
       {activeTab === 'reference' && activeReference && (
         <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/40">
