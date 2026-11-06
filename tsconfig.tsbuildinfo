@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/components/peakanalysispanel.tsx","./src/components/processingsidebar.tsx","./src/components/spectrumviewer.tsx","./src/data/ramanreferencedata.ts","./src/types/spectrum.ts","./src/utils/exportutils.ts","./src/utils/ramanmath.ts"],"version":"5.6.3"}
