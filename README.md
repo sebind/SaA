@@ -1,6 +1,9 @@
 # aiSA — agentic intelligence for spectra analysis
 
-**aiSA** is a web-based Raman spectroscopy analysis platform featuring CSV/TXT spectrum import, baseline correction (Linear, ModPoly, Morphological Rolling Ball), Savitzky–Golay smoothing, normalization, multi-color Gaussian & Lorentzian peak deconvolution, publication-ready Raman plots, reference matching via an editable Excel sheet (`reference_data.xlsx`), Oulu RamanDB `.yaml` support, RamanLab `.pkl` database screening, and high-DPI PNG/SVG/CSV exports.
+**aiSA** is a multi-spectroscopy analysis web platform supporting:
+- **Raman Spectroscopy**: CSV/TXT spectrum import, baseline correction (Linear, ModPoly, Morphological Rolling Ball), Savitzky–Golay smoothing, normalization, multi-color Gaussian & Lorentzian peak deconvolution, publication-ready Raman plots, reference matching via `reference_data.xlsx`, Oulu RamanDB `.yaml` support, and RamanLab `.pkl` database screening.
+- **UV-Vis-NIR & DRS (Kubelka-Munk) Spectroscopy**: Thin-film absorption coefficient ($\alpha = 2.303A/t$ vs. wavelength $\lambda$) from user-specified film thickness ($t$ in nm, µm, or mm), Diffuse Reflectance Spectroscopy (DRS) Kubelka-Munk remission transformation ($F(R_\infty) = (1 - R_\infty)^2 / (2R_\infty)$), direct/indirect Tauc plots, and **automatic linear region detection & tangent extrapolation** to determine optical band gaps ($E_g$ in eV and onset $\lambda_g$ in nm).
+- **Top Multi-Spectra Toggle Bar**: Switch seamlessly between **Raman**, **UV-Vis-NIR**, **XPS**, and **Photoluminescence (PL)** modules, with 300 DPI PNG, vector SVG, and CSV exports.
 
 ## Getting Started
 

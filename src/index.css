@@ -39,7 +39,12 @@
   background: #94a3b8;
 }
 
-/* Range input styling in Electric Purple */
+/* Range input styling in Electric Purple (Raman default) */
 input[type='range'] {
   accent-color: #9333ea;
+}
+
+/* Range input styling in Vibrant Racing Orange (UV-Vis-NIR) */
+input[type='range'].range-racing-orange {
+  accent-color: #ff4f00;
 }
