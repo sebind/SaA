@@ -1,5 +1,5 @@
 {
-  "name": "saa-spectra-analysis-agent",
+  "name": "aisa-spectra-analysis",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -11,7 +11,8 @@
   "dependencies": {
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

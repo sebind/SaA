@@ -2,13 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Gibed';
+  src: local('Gibed'), local('Gibed-Regular'), local('Gibed Bold'),
+       url('./fonts/Gibed.woff2') format('woff2'),
+       url('./fonts/Gibed.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
 
-/* Custom sleek scrollbars */
+.font-gibed-title {
+  font-family: 'Gibed', 'Syne', sans-serif;
+  letter-spacing: -0.02em;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -27,7 +41,7 @@
   background: #94a3b8;
 }
 
-/* Range input styling in Teal */
+/* Range input styling in Electric Purple */
 input[type='range'] {
-  accent-color: #0d9488;
+  accent-color: #9333ea;
 }

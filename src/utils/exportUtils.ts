@@ -28,7 +28,7 @@ export function exportAnalysisToCSV(
 ) {
   const lines: string[] = [];
 
-  lines.push(`# SaA - Spectra Analysis Agent Export — ${sampleName}`);
+  lines.push(`# aiSA (agentic intelligence for spectra analysis) Export — ${sampleName}`);
   lines.push(`# Generated: ${new Date().toISOString()}`);
   lines.push('');
   lines.push('# --- FITTED PEAK PARAMETERS & VIBRATIONAL ASSIGNMENTS ---');

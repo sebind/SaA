@@ -13,7 +13,8 @@ import {
   Sparkles,
   Activity,
   RotateCcw,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Download
 } from 'lucide-react';
 
 interface ProcessingSidebarProps {
@@ -24,8 +25,8 @@ interface ProcessingSidebarProps {
   activeSampleId: string;
   onSelectSample: (sample: SampleDataset) => void;
   onFileUpload: (file: File) => void;
-  pointCount: number;
-  wavenumberSpan: [number, number];
+  onExcelReferenceUpload: (file: File) => void;
+  referenceCompoundCount: number;
 }
 
 export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
@@ -36,15 +37,24 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
   activeSampleId,
   onSelectSample,
   onFileUpload,
-  pointCount,
-  wavenumberSpan
+  onExcelReferenceUpload,
+  referenceCompoundCount
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const excelInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       onFileUpload(file);
+      e.target.value = '';
+    }
+  };
+
+  const handleExcelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onExcelReferenceUpload(file);
       e.target.value = '';
     }
   };
@@ -58,25 +68,21 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
   };
 
   return (
-    <aside className="w-full lg:w-80 shrink-0 flex flex-col gap-3.5">
-      {/* 1. Spectrum Import & Preset Selector */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-2.5">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-teal-700">
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Spectrum Data</span>
+    <aside className="w-full lg:w-72 shrink-0 flex flex-col gap-3">
+      {/* 1. Spectrum Import & Presets */}
+      <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-violet-800">
+            <FileSpreadsheet className="w-3.5 h-3.5 text-purple-600" />
+            <span>Spectrum</span>
           </div>
-          <span className="text-[11px] font-mono text-slate-400">
-            {pointCount} pts ({wavenumberSpan[0]}–{wavenumberSpan[1]} cm⁻¹)
-          </span>
         </div>
 
-        {/* Drag and Drop CSV/TXT Upload Zone */}
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-teal-200 hover:border-teal-500 bg-teal-50/40 hover:bg-teal-50/80 transition rounded-lg p-3 text-center cursor-pointer mb-3"
+          className="border-2 border-dashed border-purple-200 hover:border-purple-600 bg-purple-50/40 hover:bg-purple-50/80 transition rounded-lg p-2.5 text-center cursor-pointer"
         >
           <input
             ref={fileInputRef}
@@ -85,75 +91,85 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
             onChange={handleFileChange}
             className="hidden"
           />
-          <Upload className="w-4 h-4 text-teal-600 mx-auto mb-1" />
+          <Upload className="w-4 h-4 text-purple-600 mx-auto mb-0.5" />
           <p className="text-xs font-medium text-slate-700">
-            Import <span className="text-teal-700 font-semibold">CSV</span> or{' '}
-            <span className="text-teal-700 font-semibold">TXT</span> Spectrum
-          </p>
-          <p className="text-[10px] text-slate-400 mt-0.5">
-            2-column Wavenumber (cm⁻¹) & Intensity
+            Import <span className="text-violet-800 font-semibold">CSV / TXT</span>
           </p>
         </div>
 
-        {/* Built-in Reference Sample Presets */}
-        <div className="space-y-1">
-          <label className="text-[11px] font-medium text-slate-500 block">
-            Sample Presets
-          </label>
-          <div className="grid grid-cols-2 gap-1.5">
-            {samples.map((s) => {
-              const active = s.id === activeSampleId;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => onSelectSample(s)}
-                  className={`text-left px-2.5 py-1.5 rounded-lg border text-xs transition ${
-                    active
-                      ? 'bg-teal-600 border-teal-600 text-white shadow-sm'
-                      : 'bg-slate-50/70 border-slate-200 text-slate-700 hover:border-teal-300 hover:bg-teal-50/30'
-                  }`}
-                >
-                  <div className="font-semibold truncate">{s.name.split(' ')[0]} {s.name.split(' ')[1]}</div>
-                  <div
-                    className={`text-[10px] truncate ${
-                      active ? 'text-teal-100' : 'text-slate-400'
-                    }`}
-                  >
-                    {s.subtitle}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {samples.map((s) => {
+            const active = s.id === activeSampleId;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => onSelectSample(s)}
+                className={`text-left px-2.5 py-1.5 rounded-lg border text-xs transition truncate font-medium ${
+                  active
+                    ? 'bg-gradient-to-r from-purple-600 to-violet-800 border-violet-700 text-white shadow-sm'
+                    : 'bg-slate-50/70 border-slate-200 text-slate-700 hover:border-purple-300 hover:bg-purple-50/40'
+                }`}
+              >
+                {s.name.split(' ')[0]} {s.name.split(' ')[1]}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Excel Reference Sheet Controls */}
+        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
+          <input
+            ref={excelInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleExcelChange}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => excelInputRef.current?.click()}
+            className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-violet-800 border border-purple-200 text-[11px] font-semibold transition"
+            title="Load updated reference_data.xlsx"
+          >
+            <Upload className="w-3 h-3 text-purple-600" />
+            Ref Excel ({referenceCompoundCount})
+          </button>
+          <a
+            href="./reference_data.xlsx"
+            download="reference_data.xlsx"
+            className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-medium transition"
+            title="Download reference_data.xlsx template"
+          >
+            <Download className="w-3 h-3 text-purple-600" />
+            .xlsx
+          </a>
         </div>
       </div>
 
-      {/* 2. Baseline Correction & Preprocessing */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3.5">
+      {/* 2. Preprocessing */}
+      <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-teal-700">
-            <Sliders className="w-4 h-4" />
-            <span>Signal Processing</span>
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-violet-800">
+            <Sliders className="w-3.5 h-3.5 text-purple-600" />
+            <span>Preprocessing</span>
           </div>
           <button
             type="button"
             onClick={onResetConfig}
-            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-teal-700 transition"
-            title="Reset processing parameters"
+            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-violet-700 transition"
           >
             <RotateCcw className="w-3 h-3" />
-            Reset
           </button>
         </div>
 
-        {/* Baseline Correction */}
+        {/* Baseline */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-medium text-slate-700">Baseline Correction</label>
+            <label className="text-xs font-medium text-slate-700">Baseline</label>
             {config.baselineMethod === 'polynomial' && (
-              <span className="text-[11px] font-mono text-teal-700">
-                Order {config.polyDegree}
+              <span className="text-[11px] font-mono text-violet-700">
+                Deg {config.polyDegree}
               </span>
             )}
           </div>
@@ -163,7 +179,7 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
                 ['none', 'Off'],
                 ['linear', 'Linear'],
                 ['polynomial', 'Poly'],
-                ['rollingball', 'Rolling']
+                ['rollingball', 'Roll']
               ] as [BaselineMethod, string][]
             ).map(([val, label]) => (
               <button
@@ -172,7 +188,7 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
                 onClick={() => onChangeConfig({ baselineMethod: val })}
                 className={`py-1 rounded-md transition ${
                   config.baselineMethod === val
-                    ? 'bg-white text-teal-700 shadow-sm font-semibold'
+                    ? 'bg-white text-violet-800 shadow-sm font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -182,42 +198,36 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
           </div>
 
           {config.baselineMethod === 'polynomial' && (
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-[11px] text-slate-500 w-16">Degree</span>
-              <input
-                type="range"
-                min={1}
-                max={6}
-                step={1}
-                value={config.polyDegree}
-                onChange={(e) => onChangeConfig({ polyDegree: Number(e.target.value) })}
-                className="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer"
-              />
-            </div>
+            <input
+              type="range"
+              min={1}
+              max={6}
+              step={1}
+              value={config.polyDegree}
+              onChange={(e) => onChangeConfig({ polyDegree: Number(e.target.value) })}
+              className="mt-2 w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+            />
           )}
 
           {config.baselineMethod === 'rollingball' && (
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-[11px] text-slate-500 w-16">Radius ({config.rollingRadius})</span>
-              <input
-                type="range"
-                min={15}
-                max={120}
-                step={5}
-                value={config.rollingRadius}
-                onChange={(e) => onChangeConfig({ rollingRadius: Number(e.target.value) })}
-                className="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer"
-              />
-            </div>
+            <input
+              type="range"
+              min={15}
+              max={120}
+              step={5}
+              value={config.rollingRadius}
+              onChange={(e) => onChangeConfig({ rollingRadius: Number(e.target.value) })}
+              className="mt-2 w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+            />
           )}
         </div>
 
         {/* Smoothing */}
         <div className="pt-2 border-t border-slate-100">
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-medium text-slate-700">Smoothing Filter</label>
+            <label className="text-xs font-medium text-slate-700">Smoothing</label>
             {config.smoothMethod !== 'none' && (
-              <span className="text-[11px] font-mono text-teal-700">
+              <span className="text-[11px] font-mono text-violet-700">
                 {config.smoothWindow} pts
               </span>
             )}
@@ -225,9 +235,9 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
           <div className="grid grid-cols-3 gap-1 bg-slate-100 p-0.5 rounded-lg text-[11px] font-medium">
             {(
               [
-                ['none', 'None'],
-                ['savgol', 'Savitzky–Golay'],
-                ['moving', 'Moving Avg']
+                ['none', 'Off'],
+                ['savgol', 'SavGol'],
+                ['moving', 'Moving']
               ] as [SmoothMethod, string][]
             ).map(([val, label]) => (
               <button
@@ -236,7 +246,7 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
                 onClick={() => onChangeConfig({ smoothMethod: val })}
                 className={`py-1 rounded-md transition ${
                   config.smoothMethod === val
-                    ? 'bg-white text-teal-700 shadow-sm font-semibold'
+                    ? 'bg-white text-violet-800 shadow-sm font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -246,25 +256,22 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
           </div>
 
           {config.smoothMethod !== 'none' && (
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-[11px] text-slate-500 w-16">Window</span>
-              <input
-                type="range"
-                min={5}
-                max={25}
-                step={2}
-                value={config.smoothWindow}
-                onChange={(e) => onChangeConfig({ smoothWindow: Number(e.target.value) })}
-                className="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer"
-              />
-            </div>
+            <input
+              type="range"
+              min={5}
+              max={25}
+              step={2}
+              value={config.smoothWindow}
+              onChange={(e) => onChangeConfig({ smoothWindow: Number(e.target.value) })}
+              className="mt-2 w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+            />
           )}
         </div>
 
         {/* Normalization */}
         <div className="pt-2 border-t border-slate-100">
           <label className="text-xs font-medium text-slate-700 block mb-1">
-            Intensity Normalization
+            Normalization
           </label>
           <div className="grid grid-cols-5 gap-1 bg-slate-100 p-0.5 rounded-lg text-[11px] font-medium">
             {(
@@ -282,7 +289,7 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
                 onClick={() => onChangeConfig({ normMethod: val })}
                 className={`py-1 rounded-md transition ${
                   config.normMethod === val
-                    ? 'bg-white text-teal-700 shadow-sm font-semibold'
+                    ? 'bg-white text-violet-800 shadow-sm font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -293,47 +300,40 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
         </div>
       </div>
 
-      {/* 3. Peak Detection & Profile Fitting */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-teal-700">
-          <Activity className="w-4 h-4" />
-          <span>Peak Detection & Fitting</span>
+      {/* 3. Peak Fitting */}
+      <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2.5">
+        <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-violet-800">
+          <Activity className="w-3.5 h-3.5 text-purple-600" />
+          <span>Peak Fitting</span>
         </div>
 
-        {/* Profile Fit Shape: Gaussian vs Lorentzian */}
-        <div>
-          <label className="text-xs font-medium text-slate-700 block mb-1">
-            Deconvolution Profile
-          </label>
-          <div className="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-lg text-xs font-medium">
-            {(
-              [
-                ['lorentzian', 'Lorentzian'],
-                ['gaussian', 'Gaussian']
-              ] as [FitShape, string][]
-            ).map(([val, label]) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => onChangeConfig({ fitShape: val })}
-                className={`py-1.5 rounded-md transition flex items-center justify-center gap-1.5 ${
-                  config.fitShape === val
-                    ? 'bg-teal-600 text-white shadow-sm font-semibold'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                {label}
-              </button>
-            ))}
-          </div>
+        <div className="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-lg text-xs font-medium">
+          {(
+            [
+              ['lorentzian', 'Lorentzian'],
+              ['gaussian', 'Gaussian']
+            ] as [FitShape, string][]
+          ).map(([val, label]) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => onChangeConfig({ fitShape: val })}
+              className={`py-1.5 rounded-md transition flex items-center justify-center gap-1 ${
+                config.fitShape === val
+                  ? 'bg-gradient-to-r from-purple-600 to-violet-800 text-white shadow-sm font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Sparkles className="w-3 h-3" />
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* Prominence Sensitivity */}
         <div>
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-slate-600 font-medium">Prominence Threshold</span>
-            <span className="font-mono text-teal-700 font-semibold">
+            <span className="text-slate-600">Prominence</span>
+            <span className="font-mono text-violet-800 font-semibold">
               {Math.round(config.prominence * 100)}%
             </span>
           </div>
@@ -348,11 +348,10 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
           />
         </div>
 
-        {/* Minimum Peak Separation */}
         <div>
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-slate-600 font-medium">Min Peak Distance</span>
-            <span className="font-mono text-teal-700 font-semibold">
+            <span className="text-slate-600">Min Distance</span>
+            <span className="font-mono text-violet-800 font-semibold">
               {config.minDistance} cm⁻¹
             </span>
           </div>

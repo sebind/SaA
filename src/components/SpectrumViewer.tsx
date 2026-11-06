@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { PeakData, ReferenceMaterial } from '../types/spectrum';
 import { evaluatePeakProfile } from '../utils/ramanMath';
-import { RotateCcw, ZoomIn, Eye, EyeOff, Layers } from 'lucide-react';
+import { RotateCcw, Eye, EyeOff, Layers } from 'lucide-react';
 
 interface SpectrumViewerProps {
   x: number[];
@@ -44,7 +44,7 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
 
   const width = 920;
   const height = 400;
-  const pad = { top: 28, right: 28, bottom: 46, left: 64 };
+  const pad = { top: 28, right: 28, bottom: 44, left: 60 };
   const plotW = width - pad.left - pad.right;
   const plotH = height - pad.top - pad.bottom;
 
@@ -52,7 +52,6 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
   const fullXMax = x.length > 0 ? x[x.length - 1] : 3000;
   const [xMin, xMax] = zoomDomain || [fullXMin, fullXMax];
 
-  // Visible slice indices
   const visibleIndices = useMemo(() => {
     const indices: number[] = [];
     for (let i = 0; i < x.length; i++) {
@@ -63,7 +62,6 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
     return indices;
   }, [x, xMin, xMax]);
 
-  // Compute Y domain based on active view mode
   const { yMin, yMax } = useMemo(() => {
     if (visibleIndices.length === 0) return { yMin: 0, yMax: 1 };
     let minVal = Infinity;
@@ -100,7 +98,6 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
   const fromSvgX = (px: number) =>
     xMin + ((px - pad.left) / plotW) * (xMax - xMin);
 
-  // Build SVG path helper
   const buildPath = (yArr: number[]) => {
     if (visibleIndices.length === 0) return '';
     const pts = visibleIndices.map(
@@ -109,7 +106,6 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
     return `M ${pts.join(' L ')}`;
   };
 
-  // Build area path for individual fitted Gaussian/Lorentzian components
   const buildPeakAreaPath = (peak: PeakData) => {
     if (visibleIndices.length === 0) return '';
     const relevant = visibleIndices.filter(
@@ -126,7 +122,6 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
     return `M ${startX},${baseLineY} L ${curvePts.join(' L ')} L ${endX},${baseLineY} Z`;
   };
 
-  // Generate clean axis ticks
   const xTicks = useMemo(() => {
     const count = 8;
     const step = (xMax - xMin) / count;
@@ -139,7 +134,6 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
     return Array.from({ length: count + 1 }, (_, i) => yMin + i * step);
   }, [yMin, yMax]);
 
-  // Mouse handlers for crosshair and drag-to-zoom
   const getRelativeSvgX = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return null;
     const rect = svgRef.current.getBoundingClientRect();
@@ -163,7 +157,6 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
       setDragCurrentX(sx);
     }
 
-    // Find nearest point index for crosshair
     const targetWn = fromSvgX(sx);
     let bestIdx = visibleIndices[0] ?? 0;
     let bestDist = Infinity;
@@ -196,27 +189,27 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
 
   return (
     <div ref={containerRef} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-      {/* Top Toolbar */}
-      <div className="px-4 py-2.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-slate-50/50">
+      {/* Minimal Toolbar */}
+      <div className="px-4 py-2 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-white">
         <div className="flex items-center gap-1.5">
-          <div className="inline-flex rounded-lg p-0.5 bg-slate-200/70 text-xs font-medium">
+          <div className="inline-flex rounded-lg p-0.5 bg-slate-100 text-xs font-medium">
             <button
               type="button"
               onClick={() => setViewMode('processed')}
               className={`px-2.5 py-1 rounded-md transition ${
                 viewMode === 'processed'
-                  ? 'bg-white text-teal-700 shadow-sm font-semibold'
+                  ? 'bg-white text-violet-800 shadow-sm font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Processed & Fits
+              Processed
             </button>
             <button
               type="button"
               onClick={() => setViewMode('raw')}
               className={`px-2.5 py-1 rounded-md transition ${
                 viewMode === 'raw'
-                  ? 'bg-white text-teal-700 shadow-sm font-semibold'
+                  ? 'bg-white text-violet-800 shadow-sm font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -231,12 +224,12 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                 onClick={() => setShowIndividualPeaks(!showIndividualPeaks)}
                 className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
                   showIndividualPeaks
-                    ? 'bg-teal-50 border-teal-200 text-teal-700'
+                    ? 'bg-purple-50 border-purple-200 text-violet-800'
                     : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                 }`}
               >
                 {showIndividualPeaks ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                Deconvoluted Peaks
+                Fits
               </button>
 
               <button
@@ -244,7 +237,7 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                 onClick={() => setShowCompositeFit(!showCompositeFit)}
                 className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
                   showCompositeFit
-                    ? 'bg-teal-50 border-teal-200 text-teal-700'
+                    ? 'bg-purple-50 border-purple-200 text-violet-800'
                     : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                 }`}
               >
@@ -259,10 +252,9 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
               onClick={onToggleReferenceOverlay}
               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
                 showReferenceOverlay
-                  ? 'bg-teal-600 border-teal-600 text-white'
+                  ? 'bg-gradient-to-r from-purple-600 to-violet-800 border-violet-700 text-white'
                   : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
-              title="Toggle Reference Standard Peak Lines"
             >
               <Layers className="w-3.5 h-3.5" />
               Ref: {referenceMaterial.name.split(' ')[0]}
@@ -270,33 +262,29 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-3 text-xs text-slate-500">
+        <div className="flex items-center gap-2 text-xs text-slate-500">
           {hoverIndex !== null && x[hoverIndex] !== undefined && (
-            <div className="font-mono bg-slate-100 px-2.5 py-1 rounded-md text-slate-700 border border-slate-200/80">
-              <span className="text-teal-700 font-semibold">{x[hoverIndex].toFixed(1)} cm⁻¹</span>
+            <div className="font-mono bg-purple-50/60 px-2.5 py-1 rounded-md text-slate-700 border border-purple-100">
+              <span className="text-violet-800 font-semibold">{x[hoverIndex].toFixed(1)} cm⁻¹</span>
               <span className="mx-1.5 text-slate-300">|</span>
-              <span>I: {activeYArray[hoverIndex]?.toFixed(2)}</span>
+              <span>{activeYArray[hoverIndex]?.toFixed(2)}</span>
             </div>
           )}
 
-          {zoomDomain ? (
+          {zoomDomain && (
             <button
               type="button"
               onClick={() => setZoomDomain(null)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 font-medium transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 text-violet-800 hover:bg-purple-100 font-medium transition"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Reset Zoom
+              Reset
             </button>
-          ) : (
-            <span className="hidden sm:inline-flex items-center gap-1 text-slate-400">
-              <ZoomIn className="w-3.5 h-3.5" /> Drag across plot to zoom
-            </span>
           )}
         </div>
       </div>
 
-      {/* Interactive SVG Canvas */}
+      {/* SVG Canvas */}
       <div className="relative select-none">
         <svg
           ref={svgRef}
@@ -317,7 +305,6 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
             </clipPath>
           </defs>
 
-          {/* Horizontal & Vertical Grid Lines */}
           {yTicks.map((yt, idx) => {
             const py = toSvgY(yt);
             return (
@@ -366,7 +353,6 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
             );
           })}
 
-          {/* Axis Labels */}
           <text
             x={pad.left + plotW / 2}
             y={height - 8}
@@ -385,9 +371,7 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
             Intensity (a.u.)
           </text>
 
-          {/* Clipped Plot Content */}
           <g clipPath="url(#spectrum-plot-clip)">
-            {/* Reference Material Overlay Lines */}
             {showReferenceOverlay &&
               referenceMaterial &&
               referenceMaterial.peaks.map((refPeak, idx) => {
@@ -402,7 +386,7 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                       y1={topY}
                       x2={rx}
                       y2={botY}
-                      stroke="#0d9488"
+                      stroke="#9333ea"
                       strokeWidth={1.5}
                       strokeDasharray="3 3"
                       opacity={0.55}
@@ -413,15 +397,15 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                       width={56}
                       height={15}
                       rx={3}
-                      fill="#f0fdfa"
-                      stroke="#99f6e4"
+                      fill="#faf5ff"
+                      stroke="#d8b4fe"
                       strokeWidth={0.8}
                     />
                     <text
                       x={rx}
                       y={pad.top + 14}
                       textAnchor="middle"
-                      className="fill-teal-800 text-[9px] font-mono font-semibold"
+                      className="fill-violet-900 text-[9px] font-mono font-semibold"
                     >
                       Ref {refPeak.wavenumber}
                     </text>
@@ -429,7 +413,6 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                 );
               })}
 
-            {/* Deconvoluted Individual Gaussian/Lorentzian Peak Areas */}
             {viewMode === 'processed' &&
               showIndividualPeaks &&
               peaks.map((peak) => {
@@ -439,7 +422,7 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                     key={`fit-area-${peak.id}`}
                     d={buildPeakAreaPath(peak)}
                     fill={peak.color}
-                    fillOpacity={isSelected ? 0.28 : 0.12}
+                    fillOpacity={isSelected ? 0.3 : 0.14}
                     stroke={peak.color}
                     strokeWidth={isSelected ? 2 : 1.1}
                     strokeDasharray={isSelected ? 'none' : '3 2'}
@@ -452,40 +435,38 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                 );
               })}
 
-            {/* Raw + Baseline View */}
             {viewMode === 'raw' && (
               <>
                 <path
                   d={buildPath(rawY)}
                   fill="none"
-                  stroke="#0f766e"
+                  stroke="#5b21b6"
                   strokeWidth={1.6}
                 />
                 <path
                   d={buildPath(baseline)}
                   fill="none"
-                  stroke="#f59e0b"
+                  stroke="#d946ef"
                   strokeWidth={2}
                   strokeDasharray="5 4"
                 />
               </>
             )}
 
-            {/* Processed Spectrum + Composite Fit View */}
             {viewMode === 'processed' && (
               <>
                 <path
                   d={buildPath(processedY)}
                   fill="none"
-                  stroke="#0f172a"
+                  stroke="#1e1b4b"
                   strokeWidth={1.65}
-                  opacity={0.88}
+                  opacity={0.9}
                 />
                 {showCompositeFit && peaks.length > 0 && (
                   <path
                     d={buildPath(compositeFit)}
                     fill="none"
-                    stroke="#0d9488"
+                    stroke="#9333ea"
                     strokeWidth={1.8}
                     strokeDasharray="4 3"
                   />
@@ -493,7 +474,6 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
               </>
             )}
 
-            {/* Detected Peak Markers & Wavenumber Callouts */}
             {viewMode === 'processed' &&
               peaks.map((peak) => {
                 if (peak.center < xMin || peak.center > xMax) return null;
@@ -514,25 +494,25 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                       y1={py - 6}
                       x2={px}
                       y2={py - 16}
-                      stroke={isSelected ? '#0f766e' : '#64748b'}
+                      stroke={isSelected ? '#6d28d9' : '#64748b'}
                       strokeWidth={1.2}
                     />
                     <circle
                       cx={px}
                       cy={py}
                       r={isSelected ? 5 : 3.5}
-                      fill={isSelected ? '#0d9488' : '#ffffff'}
-                      stroke="#0d9488"
+                      fill={isSelected ? '#9333ea' : '#ffffff'}
+                      stroke="#7c3aed"
                       strokeWidth={2}
                     />
                     <rect
-                      x={px - 26}
+                      x={px - 24}
                       y={Math.max(pad.top + 2, py - 32)}
-                      width={52}
+                      width={48}
                       height={15}
                       rx={4}
-                      fill={isSelected ? '#0d9488' : '#ffffff'}
-                      stroke={isSelected ? '#0d9488' : '#cbd5e1'}
+                      fill={isSelected ? '#7c3aed' : '#ffffff'}
+                      stroke={isSelected ? '#7c3aed' : '#cbd5e1'}
                       strokeWidth={1}
                     />
                     <text
@@ -549,7 +529,6 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                 );
               })}
 
-            {/* Hover Crosshair */}
             {hoverIndex !== null && x[hoverIndex] !== undefined && (
               <g>
                 <line
@@ -557,7 +536,7 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                   y1={pad.top}
                   x2={toSvgX(x[hoverIndex])}
                   y2={height - pad.bottom}
-                  stroke="#94a3b8"
+                  stroke="#a855f7"
                   strokeWidth={1}
                   strokeDasharray="2 2"
                 />
@@ -565,27 +544,25 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                   cx={toSvgX(x[hoverIndex])}
                   cy={toSvgY(activeYArray[hoverIndex])}
                   r={3.5}
-                  fill="#0d9488"
+                  fill="#9333ea"
                 />
               </g>
             )}
 
-            {/* Drag-to-Zoom Selection Box */}
             {dragStartX !== null && dragCurrentX !== null && Math.abs(dragCurrentX - dragStartX) > 4 && (
               <rect
                 x={Math.min(dragStartX, dragCurrentX)}
                 y={pad.top}
                 width={Math.abs(dragCurrentX - dragStartX)}
                 height={plotH}
-                fill="#14b8a6"
-                fillOpacity={0.15}
-                stroke="#0d9488"
+                fill="#9333ea"
+                fillOpacity={0.14}
+                stroke="#7c3aed"
                 strokeWidth={1}
               />
             )}
           </g>
 
-          {/* Plot Border Frame */}
           <rect
             x={pad.left}
             y={pad.top}
@@ -596,44 +573,6 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
             strokeWidth={1}
           />
         </svg>
-      </div>
-
-      {/* Compact Legend Footer */}
-      <div className="px-4 py-2 bg-slate-50/70 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
-        <div className="flex flex-wrap items-center gap-4">
-          {viewMode === 'processed' ? (
-            <>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-slate-900 inline-block rounded" />
-                Experimental Spectrum
-              </span>
-              {showCompositeFit && (
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="w-3 h-0.5 bg-teal-600 inline-block border-b border-dashed border-teal-600" />
-                  Composite Fit Envelope
-                </span>
-              )}
-              {showIndividualPeaks && (
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-teal-500/25 border border-teal-600 inline-block" />
-                  Fitted Peak Profiles ({peaks[0]?.shape || 'Gaussian/Lorentzian'})
-                </span>
-              )}
-            </>
-          ) : (
-            <>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-teal-700 inline-block" />
-                Raw Imported Spectrum
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-amber-500 inline-block" />
-                Estimated Fluorescence Baseline
-              </span>
-            </>
-          )}
-        </div>
-        <span>Click any peak marker to inspect vibrational assignment</span>
       </div>
     </div>
   );

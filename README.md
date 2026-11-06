@@ -1,26 +1,13 @@
-# SaA - Spectra Analysis Agent
+# aiSA — agentic intelligence for spectra analysis
 
-**SaA (Spectra Analysis Agent)** is a web-based Raman spectroscopy analysis assistant that helps researchers preprocess experimental spectra, deconvolute peaks with Gaussian and Lorentzian profiles, match vibrational modes against reference standards, and generate manuscript-ready characterization summaries.
+**aiSA** is a web-based Raman spectroscopy analysis assistant with CSV/TXT import, baseline correction, smoothing, normalization, Gaussian & Lorentzian deconvolution, reference matching via an editable Excel sheet ([`reference_data.xlsx`](file:///e:/SpectraLab/reference_data.xlsx)), and PNG/SVG/CSV exports.
 
-## Features
-- **CSV & TXT Import**: Drag-and-drop 2-column `(Wavenumber, Intensity)` files or explore built-in reference datasets (CVD Graphene, Anatase $\text{TiO}_2$, Paracetamol Form I, Crystalline Silicon).
-- **Signal Preprocessing**:
-  - Baseline Correction (Iterative Modified Polynomial, Rolling Ball, Linear)
-  - Smoothing (Savitzky–Golay, Moving Average)
-  - Normalization (0–1 Min-Max, Max Intensity, SNV, Integrated Area)
-- **Peak Detection & Deconvolution**: Automatic local-maxima prominence detection and nonlinear least-squares Gaussian & Lorentzian peak fitting.
-- **Vibrational Mode Assignment & Reference Comparison**: Automated matching against Raman vibrational modes and reference standards with shift ($\Delta\nu$) analysis.
-- **Characterization Summary & Exports**: Publication-ready text summary and one-click **PNG**, **SVG**, and **CSV** exports.
+## Updating the Reference Excel Sheet (`reference_data.xlsx`)
 
-## Development
+Edit [`reference_data.xlsx`](file:///e:/SpectraLab/reference_data.xlsx) (and copy to `public/reference_data.xlsx` or upload directly in the app sidebar via **Ref Excel**):
 
-```bash
-npm install
-npm run dev
-```
-
-## Production Build (GitHub Pages Ready)
-
-```bash
-npm run build
-```
+| Column 1 (`Compound`) | Column 2 (`Formula`) | Column 3 (`Peak_Position`) | Column 4 (`Vibrational_Mode`) |
+| :--- | :--- | :--- | :--- |
+| Anatase Titanium Dioxide | TiO₂ | 144 | Eg (O–Ti–O symmetric bending) |
+| Defective Monolayer Graphene | C (sp²) | 1582 | G Band (E2g in-plane C=C stretch) |
+| Paracetamol (Form I) | C₈H₉NO₂ | 1610 | ν(C=C) Aromatic Ring Stretch |

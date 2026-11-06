@@ -1,7 +1,13 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { ProcessingConfig, SampleDataset } from './types/spectrum';
-import { REFERENCE_MATERIALS, SAMPLE_DATASETS } from './data/ramanReferenceData';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ProcessingConfig, ReferenceMaterial, SampleDataset } from './types/spectrum';
+import {
+  REFERENCE_MATERIALS,
+  SAMPLE_DATASETS,
+  VIBRATIONAL_MODES_DB,
+  VibrationalEntry
+} from './data/ramanReferenceData';
 import { parseSpectrumText, runRamanPipeline } from './utils/ramanMath';
+import { parseReferenceExcelBuffer } from './utils/excelReference';
 import {
   exportAnalysisToCSV,
   exportSvgElementToPNG,
@@ -15,7 +21,6 @@ import {
   Download,
   FileCode,
   Image as ImageIcon,
-  Sparkles,
   AlertTriangle
 } from 'lucide-react';
 
@@ -36,6 +41,8 @@ export function App() {
   const [activeSampleId, setActiveSampleId] = useState<string>(SAMPLE_DATASETS[0].id);
   const [config, setConfig] = useState<ProcessingConfig>(DEFAULT_CONFIG);
   const [selectedPeakId, setSelectedPeakId] = useState<string | null>(null);
+  const [references, setReferences] = useState<ReferenceMaterial[]>(REFERENCE_MATERIALS);
+  const [modesDb, setModesDb] = useState<VibrationalEntry[]>(VIBRATIONAL_MODES_DB);
   const [selectedReferenceId, setSelectedReferenceId] = useState<string>(
     SAMPLE_DATASETS[0].referenceId
   );
@@ -44,20 +51,43 @@ export function App() {
 
   const svgRef = useRef<SVGSVGElement>(null);
 
+  // Automatically load ./reference_data.xlsx so user updates to the Excel file are reflected
+  useEffect(() => {
+    fetch('./reference_data.xlsx')
+      .then((res) => {
+        if (!res.ok) throw new Error('No external Excel reference found');
+        return res.arrayBuffer();
+      })
+      .then((buffer) => {
+        const parsed = parseReferenceExcelBuffer(buffer);
+        if (parsed.references.length > 0) {
+          setReferences(parsed.references);
+          setModesDb(parsed.modesDb);
+        }
+      })
+      .catch(() => {
+        // Fallback to built-in REFERENCE_MATERIALS if offline
+      });
+  }, []);
+
   const activeSample = useMemo(
     () => samples.find((s) => s.id === activeSampleId) || samples[0],
     [samples, activeSampleId]
   );
 
   const activeReference = useMemo(
-    () => REFERENCE_MATERIALS.find((r) => r.id === selectedReferenceId),
-    [selectedReferenceId]
+    () =>
+      references.find((r) => r.id === selectedReferenceId) ||
+      references.find((r) =>
+        r.name.toLowerCase().includes(selectedReferenceId.split('-')[0])
+      ) ||
+      references[0],
+    [references, selectedReferenceId]
   );
 
-  // Run full signal processing and peak deconvolution pipeline
   const pipelineResult = useMemo(() => {
-    return runRamanPipeline(activeSample.x, activeSample.y, config);
-  }, [activeSample, config]);
+    return runRamanPipeline(activeSample.x, activeSample.y, config, modesDb);
+  }, [activeSample, config, modesDb]);
 
   const handleUpdateConfig = (partial: Partial<ProcessingConfig>) => {
     setConfig((prev) => ({ ...prev, ...partial }));
@@ -65,7 +95,14 @@ export function App() {
 
   const handleSelectSample = (sample: SampleDataset) => {
     setActiveSampleId(sample.id);
-    setSelectedReferenceId(sample.referenceId);
+    const matchingRef =
+      references.find((r) => r.id === sample.referenceId) ||
+      references.find((r) =>
+        r.name.toLowerCase().includes(sample.referenceId.split('-')[0])
+      );
+    if (matchingRef) {
+      setSelectedReferenceId(matchingRef.id);
+    }
     setSelectedPeakId(null);
     setErrorBanner(null);
   };
@@ -80,7 +117,7 @@ export function App() {
         const customSample: SampleDataset = {
           id: `custom-${Date.now()}`,
           name: cleanName,
-          subtitle: `Imported (${x.length} pts)`,
+          subtitle: `${x.length} pts`,
           laserWavelength: 'Custom',
           referenceId: selectedReferenceId,
           x,
@@ -99,67 +136,65 @@ export function App() {
     reader.readAsText(file);
   };
 
-  const wavenumberSpan: [number, number] =
-    activeSample.x.length > 0
-      ? [
-          Math.round(activeSample.x[0]),
-          Math.round(activeSample.x[activeSample.x.length - 1])
-        ]
-      : [0, 0];
+  const handleExcelReferenceUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const buffer = event.target?.result as ArrayBuffer;
+        const parsed = parseReferenceExcelBuffer(buffer);
+        if (parsed.references.length === 0) {
+          throw new Error(
+            'No valid rows found. Ensure columns: Compound, Formula, Peak_Position, Vibrational_Mode.'
+          );
+        }
+        setReferences(parsed.references);
+        setModesDb(parsed.modesDb);
+        setSelectedReferenceId(parsed.references[0].id);
+        setErrorBanner(null);
+      } catch (err) {
+        setErrorBanner(
+          err instanceof Error ? err.message : 'Unable to parse Excel reference sheet.'
+        );
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
-      {/* Minimal White & Teal Top Header Bar */}
+      {/* Header Bar */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-          {/* Brand Title */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-violet-900 flex items-center justify-center text-white shadow-sm">
               <Activity className="w-4 h-4" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm font-bold tracking-tight text-slate-900">
-                  SaA
-                </h1>
-                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
-                  Spectra Analysis Agent
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">
-                Vibrational Mode Identification • Deconvolution • Reference Matching
-              </p>
+            <div className="flex items-baseline gap-2.5">
+              <h1 className="font-gibed-title text-xl font-extrabold tracking-tight bg-gradient-to-r from-purple-600 to-violet-900 bg-clip-text text-transparent">
+                aiSA
+              </h1>
+              <span className="text-xs font-medium text-violet-900/75 hidden sm:inline">
+                agentic intelligence for spectra analysis
+              </span>
             </div>
           </div>
 
-          {/* Active Sample & Export Actions */}
           <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center gap-2 mr-2 px-3 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-              <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-              <span className="font-medium text-slate-700">{activeSample.name}</span>
-              <span className="text-slate-300">•</span>
-              <span className="font-mono text-teal-700 font-semibold">
-                {pipelineResult.peaks.length} peaks
-              </span>
-            </div>
-
             <button
               type="button"
               onClick={() => exportSvgElementToPNG(svgRef.current, activeSample.name)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-teal-50 hover:border-teal-200 text-xs font-medium text-slate-700 hover:text-teal-700 transition"
-              title="Export Spectrum as PNG Image"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-purple-50 hover:border-purple-200 text-xs font-medium text-slate-700 hover:text-violet-800 transition"
             >
-              <ImageIcon className="w-3.5 h-3.5 text-teal-600" />
+              <ImageIcon className="w-3.5 h-3.5 text-purple-600" />
               <span>PNG</span>
             </button>
 
             <button
               type="button"
               onClick={() => exportSvgElementToSVG(svgRef.current, activeSample.name)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-teal-50 hover:border-teal-200 text-xs font-medium text-slate-700 hover:text-teal-700 transition"
-              title="Export Spectrum as Vector SVG"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-purple-50 hover:border-purple-200 text-xs font-medium text-slate-700 hover:text-violet-800 transition"
             >
-              <FileCode className="w-3.5 h-3.5 text-teal-600" />
+              <FileCode className="w-3.5 h-3.5 text-purple-600" />
               <span>SVG</span>
             </button>
 
@@ -176,17 +211,15 @@ export function App() {
                   pipelineResult.peaks
                 )
               }
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold transition shadow-sm"
-              title="Export Processed Data & Peak Table as CSV"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-violet-800 hover:from-purple-700 hover:to-violet-900 text-white text-xs font-semibold transition shadow-sm"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Export CSV</span>
+              <span>CSV</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Optional Parse Error Banner */}
       {errorBanner && (
         <div className="max-w-[1440px] mx-auto w-full px-4 sm:px-6 pt-3">
           <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3.5 py-2 rounded-lg text-xs flex items-center justify-between">
@@ -205,9 +238,8 @@ export function App() {
         </div>
       )}
 
-      {/* Main Workspace */}
+      {/* Main Content */}
       <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row gap-4">
-        {/* Left Control Sidebar */}
         <ProcessingSidebar
           config={config}
           onChangeConfig={handleUpdateConfig}
@@ -216,11 +248,10 @@ export function App() {
           activeSampleId={activeSample.id}
           onSelectSample={handleSelectSample}
           onFileUpload={handleFileUpload}
-          pointCount={activeSample.x.length}
-          wavenumberSpan={wavenumberSpan}
+          onExcelReferenceUpload={handleExcelReferenceUpload}
+          referenceCompoundCount={references.length}
         />
 
-        {/* Right Spectrum Viewer + Peak Parameter Table / Characterization Tabs */}
         <div className="flex-1 min-w-0 flex flex-col gap-4">
           <SpectrumViewer
             x={activeSample.x}
@@ -242,8 +273,8 @@ export function App() {
             peaks={pipelineResult.peaks}
             selectedPeakId={selectedPeakId}
             onSelectPeak={setSelectedPeakId}
-            references={REFERENCE_MATERIALS}
-            selectedReferenceId={selectedReferenceId}
+            references={references}
+            selectedReferenceId={activeReference?.id || ''}
             onSelectReferenceId={setSelectedReferenceId}
           />
         </div>

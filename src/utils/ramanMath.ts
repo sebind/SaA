@@ -6,17 +6,17 @@ import {
   ProcessingConfig,
   SmoothMethod
 } from '../types/spectrum';
-import { matchVibrationalModes } from '../data/ramanReferenceData';
+import { matchVibrationalModes, VibrationalEntry } from '../data/ramanReferenceData';
 
 const PEAK_COLORS = [
-  '#0d9488', // teal-600
-  '#0284c7', // sky-600
-  '#059669', // emerald-600
-  '#0891b2', // cyan-600
+  '#9333ea', // purple-600 (electric purple)
+  '#7c3aed', // violet-600
+  '#a855f7', // purple-500
+  '#6d28d9', // violet-700 (deep violet)
+  '#c026d3', // fuchsia-600
   '#4f46e5', // indigo-600
-  '#0f766e', // teal-700
-  '#2563eb', // blue-600
-  '#14b8a6'  // teal-500
+  '#7e22ce', // purple-700
+  '#8b5cf6'  // violet-500
 ];
 
 /**
@@ -359,7 +359,8 @@ export function detectAndFitPeaks(
   y: number[],
   prominenceRatio: number,
   minDistanceCm: number,
-  fitShape: FitShape
+  fitShape: FitShape,
+  customModesDb?: VibrationalEntry[]
 ): {
   peaks: PeakData[];
   compositeFit: number[];
@@ -531,7 +532,7 @@ export function detectAndFitPeaks(
         ? 1.064467 * bestAmp * bestFwhm
         : 1.570796 * bestAmp * bestFwhm;
 
-    const { bestMatch, alternatives } = matchVibrationalModes(bestCenter);
+    const { bestMatch, alternatives } = matchVibrationalModes(bestCenter, customModesDb);
 
     return {
       id: `peak-${i + 1}`,
@@ -568,7 +569,8 @@ export function detectAndFitPeaks(
 export function runRamanPipeline(
   rawX: number[],
   rawY: number[],
-  config: ProcessingConfig
+  config: ProcessingConfig,
+  customModesDb?: VibrationalEntry[]
 ): {
   baseline: number[];
   correctedY: number[];
@@ -597,7 +599,8 @@ export function runRamanPipeline(
     processedY,
     config.prominence,
     config.minDistance,
-    config.fitShape
+    config.fitShape,
+    customModesDb
   );
 
   return {

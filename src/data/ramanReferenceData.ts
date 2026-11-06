@@ -313,13 +313,17 @@ export const REFERENCE_MATERIALS: ReferenceMaterial[] = [
   }
 ];
 
-export function matchVibrationalModes(wavenumber: number): {
+export function matchVibrationalModes(
+  wavenumber: number,
+  customModesDb?: VibrationalEntry[]
+): {
   bestMatch?: VibrationalModeMatch;
   alternatives: VibrationalModeMatch[];
 } {
   const candidates: VibrationalModeMatch[] = [];
+  const db = customModesDb && customModesDb.length > 0 ? customModesDb : VIBRATIONAL_MODES_DB;
 
-  for (const entry of VIBRATIONAL_MODES_DB) {
+  for (const entry of db) {
     const delta = wavenumber - entry.referenceWavenumber;
     const absDelta = Math.abs(delta);
     const inRange = wavenumber >= entry.range[0] && wavenumber <= entry.range[1];
