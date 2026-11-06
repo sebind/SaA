@@ -106,6 +106,37 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
     return `M ${pts.join(' L ')}`;
   };
 
+  const referenceCurvePath = useMemo(() => {
+    if (
+      !showReferenceOverlay ||
+      !referenceMaterial?.spectrumX ||
+      !referenceMaterial?.spectrumY ||
+      referenceMaterial.spectrumX.length < 5
+    ) {
+      return '';
+    }
+    const rx = referenceMaterial.spectrumX;
+    const ry = referenceMaterial.spectrumY;
+    let minR = Infinity;
+    let maxR = -Infinity;
+    for (let i = 0; i < rx.length; i++) {
+      if (rx[i] >= xMin && rx[i] <= xMax) {
+        if (ry[i] < minR) minR = ry[i];
+        if (ry[i] > maxR) maxR = ry[i];
+      }
+    }
+    const spanR = maxR - minR || 1;
+    const targetSpan = (yMax - yMin) * 0.78;
+    const pts: string[] = [];
+    for (let i = 0; i < rx.length; i++) {
+      if (rx[i] >= xMin && rx[i] <= xMax) {
+        const scaledY = ((ry[i] - minR) / spanR) * targetSpan;
+        pts.push(`${toSvgX(rx[i]).toFixed(1)},${toSvgY(scaledY).toFixed(1)}`);
+      }
+    }
+    return pts.length > 1 ? `M ${pts.join(' L ')}` : '';
+  }, [showReferenceOverlay, referenceMaterial, xMin, xMax, yMin, yMax]);
+
   const buildPeakAreaPath = (peak: PeakData) => {
     if (visibleIndices.length === 0) return '';
     const relevant = visibleIndices.filter(
@@ -372,6 +403,15 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
           </text>
 
           <g clipPath="url(#spectrum-plot-clip)">
+            {referenceCurvePath && (
+              <path
+                d={referenceCurvePath}
+                fill="none"
+                stroke="#a855f7"
+                strokeWidth={1.5}
+                opacity={0.5}
+              />
+            )}
             {showReferenceOverlay &&
               referenceMaterial &&
               referenceMaterial.peaks.map((refPeak, idx) => {

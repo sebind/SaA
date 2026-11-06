@@ -84,6 +84,8 @@ export const RamanLabSearchPanel: React.FC<RamanLabSearchPanelProps> = ({
       formula: m.entry.formula || m.entry.elements.join(', ') || 'RamanLab Entry',
       category: m.entry.chemicalFamily || 'RamanLab Database',
       notes: `Score ${(m.score * 100).toFixed(1)}% (Corr ${m.correlationScore}, Peak ${m.peakScore})`,
+      spectrumX: m.entry.wavenumbers,
+      spectrumY: m.entry.intensities,
       peaks: m.entry.peaks.map((wn, idx) => ({
         wavenumber: Number(wn.toFixed(1)),
         relativeIntensity: 0.85,

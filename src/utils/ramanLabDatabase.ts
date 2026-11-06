@@ -545,17 +545,12 @@ export function screenRamanLabDatabase(
       : detectedPeaks.map((p) => p.center);
   const tolerance = Math.max(1, criteria.peakTolerance || 10);
 
+  // Step 2: Score candidates (optimized two-stage screening for large 6,939+ databases)
   const results: RamanLabMatchResult[] = [];
+  const isLargeCandidateSet = candidates.length > 500;
 
   for (const entry of candidates) {
-    const corrScore = calculateCorrelationScore(
-      queryX,
-      queryY,
-      entry.wavenumbers,
-      entry.intensities
-    );
-
-    // Peak matching score
+    // Stage 1: Fast O(P) peak matching
     const matchedPeaks: { expPeak: number; dbPeak: number; delta: number }[] = [];
     if (targetPeaks.length > 0 && entry.peaks.length > 0) {
       for (const qPeak of targetPeaks) {
@@ -591,6 +586,31 @@ export function screenRamanLabDatabase(
       matchedPeaks.length > 0
         ? Math.min(1, 0.75 * peakMatchRatio + 0.25 * proximityBonus)
         : 0;
+
+    // Fast skip for 'peak' algorithm or large databases when 0 peaks match
+    if (criteria.algorithm === 'peak' && peakScore < criteria.threshold) {
+      continue;
+    }
+    if (
+      isLargeCandidateSet &&
+      criteria.algorithm === 'combined' &&
+      targetPeaks.length >= 2 &&
+      matchedPeaks.length === 0
+    ) {
+      continue;
+    }
+
+    // Stage 2: Full spectral correlation on common wavenumber grid
+    const corrScore =
+      criteria.algorithm === 'peak'
+        ? 0
+        : calculateCorrelationScore(
+            queryX,
+            queryY,
+            entry.wavenumbers,
+            entry.intensities,
+            160
+          );
 
     let finalScore = corrScore;
     if (criteria.algorithm === 'peak') {

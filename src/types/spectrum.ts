@@ -54,6 +54,8 @@ export interface ReferenceMaterial {
     label: string;
     symmetry: string;
   }[];
+  spectrumX?: number[];
+  spectrumY?: number[];
   notes: string;
 }
 
