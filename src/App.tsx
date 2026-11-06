@@ -350,11 +350,12 @@ export function App() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => exportSvgElementToPNG(svgRef.current, activeSample.name)}
+              onClick={() => exportSvgElementToPNG(svgRef.current, activeSample.name, 300)}
+              title="Download Publication-Grade 300 DPI PNG"
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-purple-50 hover:border-purple-200 text-xs font-medium text-slate-700 hover:text-violet-800 transition"
             >
               <ImageIcon className="w-3.5 h-3.5 text-purple-600" />
-              <span>PNG</span>
+              <span>PNG (300 DPI)</span>
             </button>
 
             <button
