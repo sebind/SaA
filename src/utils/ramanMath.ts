@@ -9,14 +9,18 @@ import {
 import { matchVibrationalModes, VibrationalEntry } from '../data/ramanReferenceData';
 
 const PEAK_COLORS = [
-  '#9333ea', // purple-600 (electric purple)
-  '#7c3aed', // violet-600
-  '#a855f7', // purple-500
-  '#6d28d9', // violet-700 (deep violet)
-  '#c026d3', // fuchsia-600
-  '#4f46e5', // indigo-600
-  '#7e22ce', // purple-700
-  '#8b5cf6'  // violet-500
+  '#16a34a', // emerald green (classic Raman Lorentzian component)
+  '#2563eb', // royal blue
+  '#d97706', // amber gold
+  '#0891b2', // cyan / deep teal
+  '#7c3aed', // vivid violet
+  '#dc2626', // crimson red
+  '#65a30d', // olive lime
+  '#db2777', // magenta rose
+  '#ea580c', // burnt orange
+  '#0d9488', // teal
+  '#4f46e5', // indigo
+  '#9333ea'  // electric purple
 ];
 
 /**

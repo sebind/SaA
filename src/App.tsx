@@ -423,6 +423,8 @@ export function App() {
 
         <div className="flex-1 min-w-0 flex flex-col gap-4">
           <SpectrumViewer
+            sampleName={activeSample.name}
+            laserWavelength={activeSample.laserWavelength}
             x={activeSample.x}
             rawY={activeSample.y}
             baseline={pipelineResult.baseline}
