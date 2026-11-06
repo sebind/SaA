@@ -8,6 +8,7 @@ import {
 } from './data/ramanReferenceData';
 import { parseSpectrumText, runRamanPipeline } from './utils/ramanMath';
 import { parseReferenceExcelBuffer } from './utils/excelReference';
+import { parseOuluRamanDbYaml } from './utils/ouluRamanDb';
 import {
   exportAnalysisToCSV,
   exportSvgElementToPNG,
@@ -160,6 +161,31 @@ export function App() {
     reader.readAsArrayBuffer(file);
   };
 
+  const handleOuluYamlUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = String(event.target?.result || '');
+        const { reference, modes } = parseOuluRamanDbYaml(text, file.name);
+        setReferences((prev) => [
+          reference,
+          ...prev.filter((r) => r.id !== reference.id)
+        ]);
+        setModesDb((prev) => [...modes, ...prev]);
+        setSelectedReferenceId(reference.id);
+        setShowReferenceOverlay(true);
+        setErrorBanner(null);
+      } catch (err) {
+        setErrorBanner(
+          err instanceof Error
+            ? err.message
+            : 'Unable to parse Oulu RamanDB tensor file.'
+        );
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
       {/* Header Bar */}
@@ -249,6 +275,7 @@ export function App() {
           onSelectSample={handleSelectSample}
           onFileUpload={handleFileUpload}
           onExcelReferenceUpload={handleExcelReferenceUpload}
+          onOuluYamlUpload={handleOuluYamlUpload}
           referenceCompoundCount={references.length}
         />
 

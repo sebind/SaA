@@ -26,6 +26,7 @@ interface ProcessingSidebarProps {
   onSelectSample: (sample: SampleDataset) => void;
   onFileUpload: (file: File) => void;
   onExcelReferenceUpload: (file: File) => void;
+  onOuluYamlUpload: (file: File) => void;
   referenceCompoundCount: number;
 }
 
@@ -38,10 +39,12 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
   onSelectSample,
   onFileUpload,
   onExcelReferenceUpload,
+  onOuluYamlUpload,
   referenceCompoundCount
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const excelInputRef = useRef<HTMLInputElement>(null);
+  const ouluInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -55,6 +58,14 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       onExcelReferenceUpload(file);
+      e.target.value = '';
+    }
+  };
+
+  const handleOuluChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onOuluYamlUpload(file);
       e.target.value = '';
     }
   };
@@ -117,33 +128,54 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
           })}
         </div>
 
-        {/* Excel Reference Sheet Controls */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
-          <input
-            ref={excelInputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={handleExcelChange}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => excelInputRef.current?.click()}
-            className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-violet-800 border border-purple-200 text-[11px] font-semibold transition"
-            title="Load updated reference_data.xlsx"
-          >
-            <Upload className="w-3 h-3 text-purple-600" />
-            Ref Excel ({referenceCompoundCount})
-          </button>
-          <a
-            href="./reference_data.xlsx"
-            download="reference_data.xlsx"
-            className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-medium transition"
-            title="Download reference_data.xlsx template"
-          >
-            <Download className="w-3 h-3 text-purple-600" />
-            .xlsx
-          </a>
+        {/* Excel & Oulu CRD Reference Controls */}
+        <div className="pt-2 border-t border-slate-100 space-y-1.5">
+          <div className="flex items-center justify-between gap-1.5">
+            <input
+              ref={excelInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleExcelChange}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => excelInputRef.current?.click()}
+              className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-violet-800 border border-purple-200 text-[11px] font-semibold transition"
+              title="Load updated reference_data.xlsx"
+            >
+              <Upload className="w-3 h-3 text-purple-600" />
+              Ref Excel ({referenceCompoundCount})
+            </button>
+            <a
+              href="./reference_data.xlsx"
+              download="reference_data.xlsx"
+              className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-medium transition"
+              title="Download reference_data.xlsx template"
+            >
+              <Download className="w-3 h-3 text-purple-600" />
+              .xlsx
+            </a>
+          </div>
+
+          <div className="flex items-center justify-between gap-1.5">
+            <input
+              ref={ouluInputRef}
+              type="file"
+              accept=".yaml,.yml,.json"
+              onChange={handleOuluChange}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => ouluInputRef.current?.click()}
+              className="w-full inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-violet-950 hover:bg-violet-900 text-white text-[11px] font-semibold transition"
+              title="Import Raman tensor YAML/JSON downloaded from ramandb.oulu.fi"
+            >
+              <Upload className="w-3 h-3 text-purple-300" />
+              Oulu RamanDB (.yaml / .json)
+            </button>
+          </div>
         </div>
       </div>
 
