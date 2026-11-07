@@ -713,13 +713,13 @@ export function App() {
                 setActiveModule('raman');
                 setErrorBanner(null);
               }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                 activeModule === 'raman'
                   ? 'bg-gradient-to-r from-purple-600 to-violet-800 text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
               }`}
             >
-              <Activity className="w-3.5 h-3.5" />
+              <Activity className="w-3.5 h-3.5 shrink-0" />
               <span>Raman</span>
             </button>
 
@@ -729,14 +729,15 @@ export function App() {
                 setActiveModule('uvvis');
                 setErrorBanner(null);
               }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                 activeModule === 'uvvis'
                   ? 'bg-gradient-to-r from-racing-500 to-racing-600 text-white shadow-sm'
                   : 'text-slate-600 hover:text-racing-600 hover:bg-white/70'
               }`}
             >
-              <Sun className="w-3.5 h-3.5" />
-              <span>UV-Vis-NIR</span>
+              <Sun className="w-3.5 h-3.5 shrink-0" />
+              <span className="sm:hidden">UVVis</span>
+              <span className="hidden sm:inline">UV-Vis-NIR</span>
             </button>
 
             <button
@@ -745,13 +746,13 @@ export function App() {
                 setActiveModule('xps');
                 setErrorBanner(null);
               }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                 activeModule === 'xps'
                   ? 'bg-gradient-to-r from-deepblue-800 to-bubblegum-500 text-white shadow-sm'
                   : 'text-slate-600 hover:text-bubblegum-600 hover:bg-white/70'
               }`}
             >
-              <Atom className="w-3.5 h-3.5" />
+              <Atom className="w-3.5 h-3.5 shrink-0" />
               <span>XPS</span>
             </button>
 
@@ -761,14 +762,15 @@ export function App() {
                 setActiveModule('pl');
                 setErrorBanner(null);
               }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                 activeModule === 'pl'
                   ? 'bg-slate-800 text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Photoluminescence</span>
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span className="sm:hidden">PL</span>
+              <span className="hidden sm:inline">Photoluminescence</span>
             </button>
           </nav>
 
