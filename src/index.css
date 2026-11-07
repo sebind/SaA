@@ -53,3 +53,12 @@ input[type='range'].range-racing-orange {
 input[type='range'].range-bubblegum {
   accent-color: #ff2e93;
 }
+
+/* Range input styling in Deep Maroon & Sage Green (PL) */
+input[type='range'].range-maroon {
+  accent-color: #800020;
+}
+
+input[type='range'].range-sage {
+  accent-color: #5b875e;
+}

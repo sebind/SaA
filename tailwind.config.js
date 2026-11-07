@@ -61,6 +61,32 @@ export default {
           800: '#990b51',
           900: '#7a0941',
         },
+        maroon: {
+          50: '#fdf3f5',
+          100: '#fae5e9',
+          200: '#f5ccd5',
+          300: '#eba3b3',
+          400: '#dd6e87',
+          500: '#c63d5d',
+          600: '#a62041',
+          700: '#800020', // Classic Deep Maroon
+          800: '#660019', // Rich Deep Maroon
+          900: '#4d0013', // Dark Oxblood Maroon
+          950: '#2d000b',
+        },
+        sage: {
+          50: '#f4f7f4',
+          100: '#e4ece4',
+          200: '#c9dac9',
+          300: '#a3bfa4',
+          400: '#7ba37d', // Classic Sage Green
+          500: '#5b875e', // Rich Sage Green
+          600: '#466c49',
+          700: '#39563b',
+          800: '#2f4631',
+          900: '#273a29',
+          950: '#142016',
+        },
       },
     },
   },

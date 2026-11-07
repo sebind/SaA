@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ProcessingConfig, ReferenceMaterial, SampleDataset } from './types/spectrum';
 import { UVVisConfig, UVVisSampleDataset } from './types/uvvis';
 import { XPSConfig, XPSCoreLevelReference, XPSSampleDataset } from './types/xps';
+import { PLConfig, PLMaterialReference, PLSampleDataset } from './types/pl';
 import {
   REFERENCE_MATERIALS,
   SAMPLE_DATASETS,
@@ -13,6 +14,10 @@ import {
   XPS_CORE_LEVEL_REFERENCES,
   XPS_SAMPLE_DATASETS
 } from './data/xpsReferenceData';
+import {
+  PL_MATERIAL_REFERENCES,
+  PL_SAMPLE_DATASETS
+} from './data/plReferenceData';
 import { parseSpectrumText, runRamanPipeline } from './utils/ramanMath';
 import {
   exportUVVisAnalysisToCSV,
@@ -24,6 +29,11 @@ import {
   parseXPSSpectrumText,
   runXPSPipeline
 } from './utils/xpsMath';
+import {
+  exportPLAnalysisToCSV,
+  parsePLSpectrumText,
+  runPLPipeline
+} from './utils/plMath';
 import { parseReferenceExcelBuffer } from './utils/excelReference';
 import { parseOuluRamanDbYaml } from './utils/ouluRamanDb';
 import {
@@ -45,6 +55,9 @@ import { UVVisAnalysisPanel } from './components/UVVisAnalysisPanel';
 import { XPSSidebar } from './components/XPSSidebar';
 import { XPSViewer } from './components/XPSViewer';
 import { XPSAnalysisPanel } from './components/XPSAnalysisPanel';
+import { PLSidebar } from './components/PLSidebar';
+import { PLViewer } from './components/PLViewer';
+import { PLAnalysisPanel } from './components/PLAnalysisPanel';
 import {
   Activity,
   Download,
@@ -97,6 +110,27 @@ const DEFAULT_XPS_CONFIG: XPSConfig = {
   prominence: 0.06,
   minDistanceEv: 0.95,
   maxComponents: 6,
+  enableShoulderDetection: true,
+  customPeakSeeds: []
+};
+
+const DEFAULT_PL_CONFIG: PLConfig = {
+  xAxisMode: 'wavelength',
+  applyJacobianInEnergy: true,
+  laserWavelengthNm: 325,
+  referenceBandgapEv: 3.37,
+  temperatureK: 300,
+  baselineMethod: 'dark-offset',
+  polyDegree: 2,
+  smoothMethod: 'savgol',
+  smoothWindow: 5,
+  normMethod: 'none',
+  autoFit: true,
+  fitShape: 'pseudo-voigt',
+  voigtMixRatio: 25,
+  prominence: 0.06,
+  minDistanceNm: 10,
+  maxComponents: 5,
   enableShoulderDetection: true,
   customPeakSeeds: []
 };
@@ -184,9 +218,23 @@ export function App() {
   );
   const [showXpsRefOverlay, setShowXpsRefOverlay] = useState<boolean>(true);
 
+  // --- Photoluminescence (PL) State ---
+  const [plSamples, setPlSamples] = useState<PLSampleDataset[]>(PL_SAMPLE_DATASETS);
+  const [activePlSampleId, setActivePlSampleId] = useState<string>(
+    PL_SAMPLE_DATASETS[0].id
+  );
+  const [plConfig, setPlConfig] = useState<PLConfig>(DEFAULT_PL_CONFIG);
+  const [selectedPlPeakId, setSelectedPlPeakId] = useState<string | null>(null);
+  const [plReferences] = useState<PLMaterialReference[]>(PL_MATERIAL_REFERENCES);
+  const [selectedPlRefId, setSelectedPlRefId] = useState<string>(
+    PL_SAMPLE_DATASETS[0].referenceId
+  );
+  const [showPlRefOverlay, setShowPlRefOverlay] = useState<boolean>(true);
+
   const ramanSvgRef = useRef<SVGSVGElement>(null);
   const uvvisSvgRef = useRef<SVGSVGElement>(null);
   const xpsSvgRef = useRef<SVGSVGElement>(null);
+  const plSvgRef = useRef<SVGSVGElement>(null);
 
   // Automatically load ./reference_data.xlsx and ./RamanLab_Database_20250602.pkl if present
   useEffect(() => {
@@ -309,6 +357,38 @@ export function App() {
     );
     return sorted[0].centerEv;
   }, [xpsPipelineResult.peaks]);
+
+  // --- Photoluminescence (PL) Memoized Pipeline ---
+  const activePlSample = useMemo(
+    () => plSamples.find((s) => s.id === activePlSampleId) || plSamples[0],
+    [plSamples, activePlSampleId]
+  );
+
+  const activePlReference = useMemo(
+    () =>
+      plReferences.find((r) => r.id === selectedPlRefId) ||
+      plReferences.find(
+        (r) =>
+          r.formula.toLowerCase() === activePlSample.materialFormula.toLowerCase()
+      ) ||
+      plReferences[0],
+    [plReferences, selectedPlRefId, activePlSample.materialFormula]
+  );
+
+  const plPipelineResult = useMemo(() => {
+    return runPLPipeline(
+      activePlSample.wavelengthNm,
+      activePlSample.intensity,
+      plConfig,
+      activePlSample.materialFormula
+    );
+  }, [activePlSample, plConfig]);
+
+  const plWavelengthBoundsNm = useMemo<[number, number]>(() => {
+    const arr = plPipelineResult.wavelengthNm;
+    if (arr.length === 0) return [340, 800];
+    return [Math.min(...arr), Math.max(...arr)];
+  }, [plPipelineResult.wavelengthNm]);
 
   // --- Raman Handlers ---
   const handleUpdateConfig = (partial: Partial<ProcessingConfig>) => {
@@ -542,6 +622,7 @@ export function App() {
 
   const isUvVisTheme = activeModule === 'uvvis';
   const isXpsTheme = activeModule === 'xps';
+  const isPlTheme = activeModule === 'pl';
 
   // --- XPS Handlers ---
   const handleUpdateXpsConfig = (partial: Partial<XPSConfig>) => {
@@ -638,6 +719,89 @@ export function App() {
     reader.readAsText(file);
   };
 
+  // --- Photoluminescence (PL) Handlers ---
+  const handleUpdatePlConfig = (partial: Partial<PLConfig>) => {
+    setPlConfig((prev) => ({ ...prev, ...partial }));
+  };
+
+  const handleSelectPlSample = (sample: PLSampleDataset) => {
+    setActivePlSampleId(sample.id);
+    setSelectedPlRefId(sample.referenceId);
+    setSelectedPlPeakId(null);
+    setPlConfig((prev) => ({
+      ...prev,
+      laserWavelengthNm: sample.laserWavelengthNm,
+      referenceBandgapEv: sample.referenceBandgapEv,
+      temperatureK: sample.temperatureK,
+      prominence: sample.defaultProminence,
+      minDistanceNm: sample.defaultMinDistanceNm,
+      voigtMixRatio: sample.defaultVoigtMix,
+      autoFit: true,
+      customPeakSeeds: []
+    }));
+    setErrorBanner(null);
+  };
+
+  const handlePlFileUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = String(event.target?.result || '');
+        const { wavelengthNm, intensity, detectedAxisUnit } =
+          parsePLSpectrumText(text);
+        const cleanName = file.name.replace(/\.(csv|txt|dat|tsv)$/i, '');
+
+        // Find peak maximum wavelength to infer semiconductor system & bandgap
+        let maxIdx = 0;
+        for (let i = 1; i < intensity.length; i++) {
+          if (intensity[i] > intensity[maxIdx]) maxIdx = i;
+        }
+        const peakNm = wavelengthNm[maxIdx] || 520;
+        const estBandgapEv = Number(
+          Math.max(1.1, Math.min(4.0, 1239.84 / peakNm + 0.04)).toFixed(2)
+        );
+        const estLaserNm = peakNm < 420 ? 325 : peakNm < 560 ? 405 : 532;
+
+        const customSample: PLSampleDataset = {
+          id: `pl-custom-${Date.now()}`,
+          name: cleanName,
+          subtitle: `${wavelengthNm.length} pts (${detectedAxisUnit})`,
+          materialFormula: cleanName,
+          laserWavelengthNm: estLaserNm,
+          referenceBandgapEv: estBandgapEv,
+          temperatureK: 300,
+          referenceId: selectedPlRefId,
+          defaultProminence: 0.06,
+          defaultMinDistanceNm: 12,
+          defaultVoigtMix: 25,
+          notes: `Uploaded steady-state PL spectrum (${file.name}, ${wavelengthNm.length} points).`,
+          wavelengthNm,
+          intensity
+        };
+
+        setPlSamples((prev) => [customSample, ...prev.slice(0, 5)]);
+        setActivePlSampleId(customSample.id);
+        setSelectedPlPeakId(null);
+        setPlConfig((prev) => ({
+          ...prev,
+          xAxisMode: detectedAxisUnit === 'eV' ? 'energy' : 'wavelength',
+          laserWavelengthNm: estLaserNm,
+          referenceBandgapEv: estBandgapEv,
+          autoFit: true,
+          customPeakSeeds: []
+        }));
+        setErrorBanner(null);
+      } catch (err) {
+        setErrorBanner(
+          err instanceof Error
+            ? err.message
+            : 'Unable to parse PL spectrum file.'
+        );
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
       {/* Header Bar with Multi-Spectra Toggle Buttons */}
@@ -647,6 +811,8 @@ export function App() {
             ? 'border-powder-200'
             : isXpsTheme
             ? 'border-deepblue-200'
+            : isPlTheme
+            ? 'border-sage-200'
             : 'border-slate-200'
         }`}
       >
@@ -659,6 +825,8 @@ export function App() {
                   ? 'bg-gradient-to-br from-powder-500 to-racing-500'
                   : isXpsTheme
                   ? 'bg-gradient-to-br from-deepblue-800 via-deepblue-700 to-bubblegum-500'
+                  : isPlTheme
+                  ? 'bg-gradient-to-br from-maroon-800 via-maroon-700 to-sage-500'
                   : 'bg-gradient-to-br from-purple-600 to-violet-900'
               }`}
             >
@@ -666,6 +834,8 @@ export function App() {
                 <Sun className="w-4 h-4" />
               ) : isXpsTheme ? (
                 <Atom className="w-4 h-4" />
+              ) : isPlTheme ? (
+                <Sparkles className="w-4 h-4" />
               ) : (
                 <Activity className="w-4 h-4" />
               )}
@@ -677,6 +847,8 @@ export function App() {
                     ? 'bg-gradient-to-r from-powder-700 via-powder-600 to-racing-500'
                     : isXpsTheme
                     ? 'bg-gradient-to-r from-deepblue-900 via-deepblue-700 to-bubblegum-500'
+                    : isPlTheme
+                    ? 'bg-gradient-to-r from-maroon-900 via-maroon-700 to-sage-600'
                     : 'bg-gradient-to-r from-purple-600 to-violet-900'
                 }`}
               >
@@ -688,6 +860,8 @@ export function App() {
                     ? 'text-powder-800/85'
                     : isXpsTheme
                     ? 'text-deepblue-800/85'
+                    : isPlTheme
+                    ? 'text-maroon-800/85'
                     : 'text-violet-900/75'
                 }`}
               >
@@ -704,6 +878,8 @@ export function App() {
                 ? 'bg-powder-50 border-powder-200'
                 : isXpsTheme
                 ? 'bg-deepblue-50/80 border-deepblue-200'
+                : isPlTheme
+                ? 'bg-sage-50/90 border-sage-200'
                 : 'bg-slate-100/90 border-slate-200'
             }`}
           >
@@ -764,8 +940,8 @@ export function App() {
               }}
               className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                 activeModule === 'pl'
-                  ? 'bg-slate-800 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                  ? 'bg-gradient-to-r from-maroon-800 to-sage-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-maroon-800 hover:bg-white/70'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 shrink-0" />
@@ -774,126 +950,147 @@ export function App() {
             </button>
           </nav>
 
-          {/* Export Buttons (Context-aware for Raman, UV-Vis-NIR, and XPS) */}
-          {(activeModule === 'raman' ||
-            activeModule === 'uvvis' ||
-            activeModule === 'xps') && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  exportSvgElementToPNG(
-                    activeModule === 'uvvis'
-                      ? uvvisSvgRef.current
-                      : activeModule === 'xps'
-                      ? xpsSvgRef.current
-                      : ramanSvgRef.current,
-                    activeModule === 'uvvis'
-                      ? activeUvSample.name
-                      : activeModule === 'xps'
-                      ? activeXpsSample.name
-                      : activeSample.name,
-                    300
-                  )
-                }
-                title="Download Publication-Grade 300 DPI PNG"
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-white text-xs font-medium transition ${
+          {/* Export Buttons (Context-aware for Raman, UV-Vis-NIR, XPS, and PL) */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                exportSvgElementToPNG(
+                  activeModule === 'uvvis'
+                    ? uvvisSvgRef.current
+                    : activeModule === 'xps'
+                    ? xpsSvgRef.current
+                    : activeModule === 'pl'
+                    ? plSvgRef.current
+                    : ramanSvgRef.current,
+                  activeModule === 'uvvis'
+                    ? activeUvSample.name
+                    : activeModule === 'xps'
+                    ? activeXpsSample.name
+                    : activeModule === 'pl'
+                    ? activePlSample.name
+                    : activeSample.name,
+                  300
+                )
+              }
+              title="Download Publication-Grade 300 DPI PNG"
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-white text-xs font-medium transition ${
+                isUvVisTheme
+                  ? 'border-powder-300 text-slate-700 hover:bg-powder-50 hover:border-racing-300 hover:text-racing-700'
+                  : isXpsTheme
+                  ? 'border-deepblue-200 text-deepblue-900 hover:bg-bubblegum-50 hover:border-bubblegum-300 hover:text-bubblegum-700'
+                  : isPlTheme
+                  ? 'border-sage-300 text-maroon-900 hover:bg-sage-50 hover:border-maroon-400 hover:text-maroon-800'
+                  : 'border-slate-200 text-slate-700 hover:bg-purple-50 hover:border-purple-200 hover:text-violet-800'
+              }`}
+            >
+              <ImageIcon
+                className={`w-3.5 h-3.5 ${
                   isUvVisTheme
-                    ? 'border-powder-300 text-slate-700 hover:bg-powder-50 hover:border-racing-300 hover:text-racing-700'
+                    ? 'text-racing-500'
                     : isXpsTheme
-                    ? 'border-deepblue-200 text-deepblue-900 hover:bg-bubblegum-50 hover:border-bubblegum-300 hover:text-bubblegum-700'
-                    : 'border-slate-200 text-slate-700 hover:bg-purple-50 hover:border-purple-200 hover:text-violet-800'
+                    ? 'text-bubblegum-500'
+                    : isPlTheme
+                    ? 'text-maroon-700'
+                    : 'text-purple-600'
                 }`}
-              >
-                <ImageIcon
-                  className={`w-3.5 h-3.5 ${
-                    isUvVisTheme
-                      ? 'text-racing-500'
-                      : isXpsTheme
-                      ? 'text-bubblegum-500'
-                      : 'text-purple-600'
-                  }`}
-                />
-                <span>PNG (300 DPI)</span>
-              </button>
+              />
+              <span>PNG (300 DPI)</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={() =>
-                  exportSvgElementToSVG(
-                    activeModule === 'uvvis'
-                      ? uvvisSvgRef.current
-                      : activeModule === 'xps'
-                      ? xpsSvgRef.current
-                      : ramanSvgRef.current,
-                    activeModule === 'uvvis'
-                      ? activeUvSample.name
-                      : activeModule === 'xps'
-                      ? activeXpsSample.name
-                      : activeSample.name
-                  )
-                }
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-white text-xs font-medium transition ${
+            <button
+              type="button"
+              onClick={() =>
+                exportSvgElementToSVG(
+                  activeModule === 'uvvis'
+                    ? uvvisSvgRef.current
+                    : activeModule === 'xps'
+                    ? xpsSvgRef.current
+                    : activeModule === 'pl'
+                    ? plSvgRef.current
+                    : ramanSvgRef.current,
+                  activeModule === 'uvvis'
+                    ? activeUvSample.name
+                    : activeModule === 'xps'
+                    ? activeXpsSample.name
+                    : activeModule === 'pl'
+                    ? activePlSample.name
+                    : activeSample.name
+                )
+              }
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-white text-xs font-medium transition ${
+                isUvVisTheme
+                  ? 'border-powder-300 text-slate-700 hover:bg-powder-50 hover:border-racing-300 hover:text-racing-700'
+                  : isXpsTheme
+                  ? 'border-deepblue-200 text-deepblue-900 hover:bg-bubblegum-50 hover:border-bubblegum-300 hover:text-bubblegum-700'
+                  : isPlTheme
+                  ? 'border-sage-300 text-maroon-900 hover:bg-sage-50 hover:border-maroon-400 hover:text-maroon-800'
+                  : 'border-slate-200 text-slate-700 hover:bg-purple-50 hover:border-purple-200 hover:text-violet-800'
+              }`}
+            >
+              <FileCode
+                className={`w-3.5 h-3.5 ${
                   isUvVisTheme
-                    ? 'border-powder-300 text-slate-700 hover:bg-powder-50 hover:border-racing-300 hover:text-racing-700'
+                    ? 'text-racing-500'
                     : isXpsTheme
-                    ? 'border-deepblue-200 text-deepblue-900 hover:bg-bubblegum-50 hover:border-bubblegum-300 hover:text-bubblegum-700'
-                    : 'border-slate-200 text-slate-700 hover:bg-purple-50 hover:border-purple-200 hover:text-violet-800'
+                    ? 'text-bubblegum-500'
+                    : isPlTheme
+                    ? 'text-maroon-700'
+                    : 'text-purple-600'
                 }`}
-              >
-                <FileCode
-                  className={`w-3.5 h-3.5 ${
-                    isUvVisTheme
-                      ? 'text-racing-500'
-                      : isXpsTheme
-                      ? 'text-bubblegum-500'
-                      : 'text-purple-600'
-                  }`}
-                />
-                <span>SVG</span>
-              </button>
+              />
+              <span>SVG</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (activeModule === 'uvvis') {
-                    exportUVVisAnalysisToCSV(
-                      activeUvSample.name,
-                      uvConfig,
-                      uvPipelineResult
-                    );
-                  } else if (activeModule === 'xps') {
-                    exportXPSAnalysisToCSV(
-                      activeXpsSample.name,
-                      activeXpsSample.coreLevel,
-                      xpsConfig,
-                      xpsPipelineResult
-                    );
-                  } else {
-                    exportAnalysisToCSV(
-                      activeSample.name,
-                      activeSample.x,
-                      activeSample.y,
-                      pipelineResult.baseline,
-                      pipelineResult.processedY,
-                      pipelineResult.compositeFit,
-                      pipelineResult.peaks
-                    );
-                  }
-                }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition shadow-sm ${
-                  isUvVisTheme
-                    ? 'bg-gradient-to-r from-racing-500 to-racing-600 hover:from-racing-600 hover:to-racing-700'
-                    : isXpsTheme
-                    ? 'bg-gradient-to-r from-deepblue-800 to-bubblegum-500 hover:from-deepblue-900 hover:to-bubblegum-600'
-                    : 'bg-gradient-to-r from-purple-600 to-violet-800 hover:from-purple-700 hover:to-violet-900'
-                }`}
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>CSV</span>
-              </button>
-            </div>
-          )}
+            <button
+              type="button"
+              onClick={() => {
+                if (activeModule === 'uvvis') {
+                  exportUVVisAnalysisToCSV(
+                    activeUvSample.name,
+                    uvConfig,
+                    uvPipelineResult
+                  );
+                } else if (activeModule === 'xps') {
+                  exportXPSAnalysisToCSV(
+                    activeXpsSample.name,
+                    activeXpsSample.coreLevel,
+                    xpsConfig,
+                    xpsPipelineResult
+                  );
+                } else if (activeModule === 'pl') {
+                  exportPLAnalysisToCSV(
+                    activePlSample.name,
+                    activePlSample.materialFormula,
+                    plConfig,
+                    plPipelineResult
+                  );
+                } else {
+                  exportAnalysisToCSV(
+                    activeSample.name,
+                    activeSample.x,
+                    activeSample.y,
+                    pipelineResult.baseline,
+                    pipelineResult.processedY,
+                    pipelineResult.compositeFit,
+                    pipelineResult.peaks
+                  );
+                }
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition shadow-sm ${
+                isUvVisTheme
+                  ? 'bg-gradient-to-r from-racing-500 to-racing-600 hover:from-racing-600 hover:to-racing-700'
+                  : isXpsTheme
+                  ? 'bg-gradient-to-r from-deepblue-800 to-bubblegum-500 hover:from-deepblue-900 hover:to-bubblegum-600'
+                  : isPlTheme
+                  ? 'bg-gradient-to-r from-maroon-800 to-sage-600 hover:from-maroon-900 hover:to-sage-700'
+                  : 'bg-gradient-to-r from-purple-600 to-violet-800 hover:from-purple-700 hover:to-violet-900'
+              }`}
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>CSV</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -1067,35 +1264,53 @@ export function App() {
       )}
 
       {activeModule === 'pl' && (
-        <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-10 flex items-center justify-center">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm max-w-lg w-full p-6 text-center space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center mx-auto">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="font-gibed-title text-lg font-bold text-slate-900">
-                Photoluminescence (PL) Spectroscopy Module
-              </h2>
-              <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                Ready for integration: Steady-state emission peak deconvolution, near-band-edge vs. defect emission ratios, and CIE chromaticity coordinates.
-              </p>
-            </div>
-            <div className="flex items-center justify-center gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setActiveModule('xps')}
-                className="px-3.5 py-2 rounded-lg bg-gradient-to-r from-deepblue-800 to-bubblegum-500 text-white text-xs font-semibold shadow-sm hover:from-deepblue-900 hover:to-bubblegum-600 transition"
-              >
-                Open XPS Analysis
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveModule('uvvis')}
-                className="px-3.5 py-2 rounded-lg bg-gradient-to-r from-racing-500 to-racing-600 text-white text-xs font-semibold shadow-sm hover:from-racing-600 hover:to-racing-700 transition"
-              >
-                Open UV-Vis-NIR Analysis
-              </button>
-            </div>
+        <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row gap-4">
+          <PLSidebar
+            config={plConfig}
+            onChangeConfig={handleUpdatePlConfig}
+            onResetConfig={() =>
+              setPlConfig({
+                ...DEFAULT_PL_CONFIG,
+                laserWavelengthNm: activePlSample.laserWavelengthNm,
+                referenceBandgapEv: activePlSample.referenceBandgapEv,
+                temperatureK: activePlSample.temperatureK,
+                prominence: activePlSample.defaultProminence,
+                minDistanceNm: activePlSample.defaultMinDistanceNm,
+                voigtMixRatio: activePlSample.defaultVoigtMix
+              })
+            }
+            samples={plSamples}
+            activeSampleId={activePlSample.id}
+            onSelectSample={handleSelectPlSample}
+            onFileUpload={handlePlFileUpload}
+            wavelengthBoundsNm={plWavelengthBoundsNm}
+          />
+
+          <div className="flex-1 min-w-0 flex flex-col gap-4">
+            <PLViewer
+              sampleName={activePlSample.name}
+              materialFormula={activePlSample.materialFormula}
+              config={plConfig}
+              result={plPipelineResult}
+              selectedPeakId={selectedPlPeakId}
+              onSelectPeak={setSelectedPlPeakId}
+              referenceMaterial={activePlReference}
+              showReferenceOverlay={showPlRefOverlay}
+              onToggleReferenceOverlay={() => setShowPlRefOverlay((v) => !v)}
+              svgRef={plSvgRef}
+            />
+
+            <PLAnalysisPanel
+              sampleName={activePlSample.name}
+              materialFormula={activePlSample.materialFormula}
+              config={plConfig}
+              result={plPipelineResult}
+              selectedPeakId={selectedPlPeakId}
+              onSelectPeak={setSelectedPlPeakId}
+              references={plReferences}
+              selectedReferenceId={activePlReference?.id || ''}
+              onSelectReferenceId={setSelectedPlRefId}
+            />
           </div>
         </main>
       )}
