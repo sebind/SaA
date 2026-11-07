@@ -87,15 +87,15 @@ export const PLSidebar: React.FC<PLSidebarProps> = ({
   };
 
   return (
-    <aside className="w-full lg:w-72 shrink-0 flex flex-col gap-3">
+    <aside className="w-full lg:w-72 shrink-0 grid grid-cols-1 md:grid-cols-3 lg:flex lg:flex-col gap-3">
       {/* 1. PL Spectrum Import & Semiconductor/Emitter Presets */}
-      <div className="bg-white rounded-xl border border-sage-200 p-3.5 shadow-sm space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-maroon-800">
-            <FileSpreadsheet className="w-3.5 h-3.5 text-sage-600" />
-            <span>PL Emission Spectra</span>
+      <div className="bg-white rounded-xl border border-sage-200 p-3.5 shadow-sm space-y-2.5 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-maroon-800 truncate">
+            <FileSpreadsheet className="w-3.5 h-3.5 text-sage-600 shrink-0" />
+            <span className="truncate">PL Spectrum</span>
           </div>
-          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-sage-50 text-sage-800 border border-sage-200 font-mono">
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-sage-50 text-sage-800 border border-sage-200 font-mono shrink-0">
             λ_exc = {config.laserWavelengthNm} nm
           </span>
         </div>
@@ -114,10 +114,10 @@ export const PLSidebar: React.FC<PLSidebarProps> = ({
             className="hidden"
           />
           <Upload className="w-4 h-4 text-maroon-700 mx-auto mb-0.5" />
-          <p className="text-xs font-medium text-maroon-900">
+          <p className="text-xs font-medium text-maroon-900 truncate">
             Import <span className="text-maroon-700 font-semibold">CSV / TXT</span> PL Spectrum
           </p>
-          <p className="text-[10px] text-slate-500 mt-0.5">
+          <p className="text-[10px] text-slate-500 mt-0.5 truncate">
             Wavelength (nm) or Energy (eV) vs. PL Counts
           </p>
         </div>
@@ -131,7 +131,7 @@ export const PLSidebar: React.FC<PLSidebarProps> = ({
                 type="button"
                 onClick={() => onSelectSample(s)}
                 title={`${s.name} — ${s.subtitle}`}
-                className={`text-left px-2.5 py-1.5 rounded-lg border text-xs transition truncate font-medium ${
+                className={`text-left px-2 py-1.5 rounded-lg border text-xs transition truncate font-medium ${
                   active
                     ? 'bg-gradient-to-r from-maroon-800 via-maroon-700 to-sage-600 border-maroon-800 text-white shadow-sm'
                     : 'bg-sage-50/50 border-sage-200 text-maroon-900 hover:border-maroon-400 hover:bg-maroon-50/30'
@@ -142,7 +142,7 @@ export const PLSidebar: React.FC<PLSidebarProps> = ({
                     {s.materialFormula}
                   </span>
                   <span
-                    className={`text-[9px] px-1 rounded font-mono ${
+                    className={`text-[9px] px-1 rounded font-mono shrink-0 ${
                       active
                         ? 'bg-white/20 text-white'
                         : 'bg-white text-sage-700 border border-sage-200'
@@ -165,17 +165,17 @@ export const PLSidebar: React.FC<PLSidebarProps> = ({
       </div>
 
       {/* 2. Excitation, X-Axis Domain & Baseline Processing */}
-      <div className="bg-white rounded-xl border border-sage-200 p-3.5 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-maroon-800">
-            <Sliders className="w-3.5 h-3.5 text-sage-600" />
-            <span>Axis & Excitation</span>
+      <div className="bg-white rounded-xl border border-sage-200 p-3.5 shadow-sm space-y-3 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-maroon-800 truncate">
+            <Sliders className="w-3.5 h-3.5 text-sage-600 shrink-0" />
+            <span className="truncate">Axis & Excitation</span>
           </div>
           <button
             type="button"
             onClick={onResetConfig}
             title="Reset PL parameters"
-            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-maroon-700 transition"
+            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-maroon-700 transition shrink-0"
           >
             <RotateCcw className="w-3 h-3" />
           </button>
@@ -196,14 +196,14 @@ export const PLSidebar: React.FC<PLSidebarProps> = ({
             {(
               [
                 ['wavelength', 'Wavelength (nm)'],
-                ['energy', 'Photon Energy (eV)']
+                ['energy', 'Energy (eV)']
               ] as [PLXAxisMode, string][]
             ).map(([val, label]) => (
               <button
                 key={val}
                 type="button"
                 onClick={() => onChangeConfig({ xAxisMode: val })}
-                className={`py-1 rounded-md transition ${
+                className={`py-1 px-1 rounded-md transition truncate ${
                   config.xAxisMode === val
                     ? 'bg-maroon-800 text-white shadow-sm font-semibold'
                     : 'text-maroon-900 hover:text-maroon-700'
@@ -416,23 +416,23 @@ export const PLSidebar: React.FC<PLSidebarProps> = ({
       </div>
 
       {/* 3. Multi-Peak Emission Deconvolution (NBE vs Defect States) */}
-      <div className="bg-white rounded-xl border border-sage-200 p-3.5 shadow-sm space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-maroon-800">
-            <Sparkles className="w-3.5 h-3.5 text-sage-600" />
-            <span>Emission Deconvolution</span>
+      <div className="bg-white rounded-xl border border-sage-200 p-3.5 shadow-sm space-y-2.5 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-maroon-800 truncate">
+            <Sparkles className="w-3.5 h-3.5 text-sage-600 shrink-0" />
+            <span className="truncate">Deconvolution</span>
           </div>
           <button
             type="button"
             onClick={() => onChangeConfig({ autoFit: !config.autoFit })}
-            className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition inline-flex items-center gap-1 ${
+            className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition inline-flex items-center gap-1 shrink-0 ${
               config.autoFit
                 ? 'bg-sage-600 text-white shadow-sm'
                 : 'bg-slate-100 text-slate-600'
             }`}
           >
-            <Sparkles className="w-2.5 h-2.5" />
-            {config.autoFit ? 'Auto Fit ON' : 'Manual Only'}
+            <Sparkles className="w-2.5 h-2.5 shrink-0" />
+            <span>{config.autoFit ? 'Auto ON' : 'Manual'}</span>
           </button>
         </div>
 

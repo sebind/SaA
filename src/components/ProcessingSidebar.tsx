@@ -79,13 +79,13 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
   };
 
   return (
-    <aside className="w-full lg:w-72 shrink-0 flex flex-col gap-3">
+    <aside className="w-full lg:w-72 shrink-0 grid grid-cols-1 md:grid-cols-3 lg:flex lg:flex-col gap-3">
       {/* 1. Spectrum Import & Presets */}
-      <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-violet-800">
-            <FileSpreadsheet className="w-3.5 h-3.5 text-purple-600" />
-            <span>Spectrum</span>
+      <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2.5 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-violet-800 truncate">
+            <FileSpreadsheet className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+            <span className="truncate">Raman Spectrum</span>
           </div>
         </div>
 
@@ -103,7 +103,7 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
             className="hidden"
           />
           <Upload className="w-4 h-4 text-purple-600 mx-auto mb-0.5" />
-          <p className="text-xs font-medium text-slate-700">
+          <p className="text-xs font-medium text-slate-700 truncate">
             Import <span className="text-violet-800 font-semibold">CSV / TXT</span>
           </p>
         </div>
@@ -116,7 +116,8 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
                 key={s.id}
                 type="button"
                 onClick={() => onSelectSample(s)}
-                className={`text-left px-2.5 py-1.5 rounded-lg border text-xs transition truncate font-medium ${
+                title={`${s.name} (${s.laserWavelength})`}
+                className={`text-left px-2 py-1.5 rounded-lg border text-xs transition truncate font-medium ${
                   active
                     ? 'bg-gradient-to-r from-purple-600 to-violet-800 border-violet-700 text-white shadow-sm'
                     : 'bg-slate-50/70 border-slate-200 text-slate-700 hover:border-purple-300 hover:bg-purple-50/40'
@@ -141,20 +142,20 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
             <button
               type="button"
               onClick={() => excelInputRef.current?.click()}
-              className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-violet-800 border border-purple-200 text-[11px] font-semibold transition"
+              className="flex-1 min-w-0 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-violet-800 border border-purple-200 text-[11px] font-semibold transition truncate"
               title="Load updated reference_data.xlsx"
             >
-              <Upload className="w-3 h-3 text-purple-600" />
-              Ref Excel ({referenceCompoundCount})
+              <Upload className="w-3 h-3 text-purple-600 shrink-0" />
+              <span className="truncate">Ref Excel ({referenceCompoundCount})</span>
             </button>
             <a
               href="./reference_data.xlsx"
               download="reference_data.xlsx"
-              className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-medium transition"
+              className="shrink-0 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-medium transition"
               title="Download reference_data.xlsx template"
             >
-              <Download className="w-3 h-3 text-purple-600" />
-              .xlsx
+              <Download className="w-3 h-3 text-purple-600 shrink-0" />
+              <span>.xlsx</span>
             </a>
           </div>
 
@@ -169,18 +170,18 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
             <button
               type="button"
               onClick={() => ouluInputRef.current?.click()}
-              className="w-full inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-violet-950 hover:bg-violet-900 text-white text-[11px] font-semibold transition"
+              className="w-full inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-violet-950 hover:bg-violet-900 text-white text-[11px] font-semibold transition truncate"
               title="Import Raman tensor YAML/JSON downloaded from ramandb.oulu.fi"
             >
-              <Upload className="w-3 h-3 text-purple-300" />
-              Oulu RamanDB (.yaml / .json)
+              <Upload className="w-3 h-3 text-purple-300 shrink-0" />
+              <span className="truncate">Oulu RamanDB (.yaml/.json)</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* 2. Preprocessing */}
-      <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-3">
+      <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-3 min-w-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-violet-800">
             <Sliders className="w-3.5 h-3.5 text-purple-600" />
@@ -333,10 +334,10 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
       </div>
 
       {/* 3. Peak Fitting */}
-      <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2.5">
+      <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2.5 min-w-0">
         <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-violet-800">
-          <Activity className="w-3.5 h-3.5 text-purple-600" />
-          <span>Peak Fitting</span>
+          <Activity className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+          <span className="truncate">Peak Fitting</span>
         </div>
 
         <div className="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-lg text-xs font-medium">
@@ -350,14 +351,14 @@ export const ProcessingSidebar: React.FC<ProcessingSidebarProps> = ({
               key={val}
               type="button"
               onClick={() => onChangeConfig({ fitShape: val })}
-              className={`py-1.5 rounded-md transition flex items-center justify-center gap-1 ${
+              className={`py-1.5 px-1.5 rounded-md transition flex items-center justify-center gap-1 truncate ${
                 config.fitShape === val
                   ? 'bg-gradient-to-r from-purple-600 to-violet-800 text-white shadow-sm font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Sparkles className="w-3 h-3" />
-              {label}
+              <Sparkles className="w-3 h-3 shrink-0" />
+              <span className="truncate">{label}</span>
             </button>
           ))}
         </div>

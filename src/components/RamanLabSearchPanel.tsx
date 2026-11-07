@@ -100,26 +100,26 @@ export const RamanLabSearchPanel: React.FC<RamanLabSearchPanelProps> = ({
     <div className="p-4 space-y-4">
       {/* 1. Local Database Path / File Loader Bar */}
       <div className="p-3 rounded-lg bg-purple-50/50 border border-purple-200/80 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-[240px] flex-1">
+        <div className="flex items-center gap-2 w-full sm:w-auto sm:min-w-[220px] flex-1 min-w-0">
           <Database className="w-4 h-4 text-purple-600 shrink-0" />
           <input
             type="text"
             value={pathInput}
             onChange={(e) => setPathInput(e.target.value)}
             placeholder="Path/URL to RamanLab_Database_20250602.pkl"
-            className="flex-1 bg-white border border-purple-200 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-700 focus:outline-none focus:border-purple-600"
+            className="flex-1 min-w-0 bg-white border border-purple-200 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-700 focus:outline-none focus:border-purple-600"
           />
           <button
             type="button"
             disabled={isLoadingDb}
             onClick={() => onLoadDbFromPath(pathInput)}
-            className="px-2.5 py-1 rounded-lg bg-white hover:bg-purple-100 text-violet-800 border border-purple-200 text-xs font-semibold transition"
+            className="shrink-0 px-2.5 py-1 rounded-lg bg-white hover:bg-purple-100 text-violet-800 border border-purple-200 text-xs font-semibold transition"
           >
-            {isLoadingDb ? 'Loading...' : 'Load Path'}
+            {isLoadingDb ? 'Loading...' : 'Load'}
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <input
             ref={fileInputRef}
             type="file"
@@ -137,10 +137,11 @@ export const RamanLabSearchPanel: React.FC<RamanLabSearchPanelProps> = ({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-purple-600 to-violet-800 hover:from-purple-700 hover:to-violet-900 text-white text-xs font-semibold transition shadow-sm"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg bg-gradient-to-r from-purple-600 to-violet-800 hover:from-purple-700 hover:to-violet-900 text-white text-xs font-semibold transition shadow-sm"
           >
-            <FolderOpen className="w-3.5 h-3.5" />
-            Browse Local .pkl
+            <FolderOpen className="w-3.5 h-3.5 shrink-0" />
+            <span className="sm:hidden">Browse .pkl</span>
+            <span className="hidden sm:inline">Browse Local .pkl</span>
           </button>
 
           <a
@@ -150,8 +151,8 @@ export const RamanLabSearchPanel: React.FC<RamanLabSearchPanelProps> = ({
             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-violet-800 text-xs font-medium transition"
             title="Download RamanLab_Database_20250602.pkl from Zenodo"
           >
-            Zenodo
-            <ExternalLink className="w-3 h-3" />
+            <span>Zenodo</span>
+            <ExternalLink className="w-3 h-3 shrink-0" />
           </a>
 
           <span className="px-2 py-0.5 rounded-full bg-purple-100 text-violet-900 font-mono text-[11px] font-semibold">
@@ -286,7 +287,7 @@ export const RamanLabSearchPanel: React.FC<RamanLabSearchPanelProps> = ({
 
       {/* 3. Screened & Ranked Candidate Results */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs text-slate-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
           <span>
             Screened <strong className="text-violet-900">{filteredCount.toLocaleString()}</strong> candidates • Top{' '}
             <strong className="text-violet-900">{matches.length}</strong> matches
@@ -298,7 +299,7 @@ export const RamanLabSearchPanel: React.FC<RamanLabSearchPanelProps> = ({
               setCriteria((prev) => ({ ...prev, userPeaks: e.target.value }))
             }
             placeholder="Optional target peaks (e.g. 144, 399, 639)"
-            className="w-64 bg-white border border-slate-200 rounded-md px-2.5 py-1 text-xs font-mono focus:outline-none focus:border-purple-600"
+            className="w-full sm:w-64 bg-white border border-slate-200 rounded-md px-2.5 py-1 text-xs font-mono focus:outline-none focus:border-purple-600"
           />
         </div>
 

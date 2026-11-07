@@ -66,66 +66,68 @@ export const PeakAnalysisPanel: React.FC<PeakAnalysisPanelProps> = ({
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       {/* Header Tabs */}
-      <div className="px-4 py-2 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-white">
-        <div className="flex items-center gap-1">
+      <div className="px-3 sm:px-4 py-2 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-white">
+        <div className="flex items-center gap-1 flex-wrap">
           <button
             type="button"
             onClick={() => setActiveTab('table')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
               activeTab === 'table'
                 ? 'bg-gradient-to-r from-purple-600 to-violet-800 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <Table className="w-3.5 h-3.5" />
-            Peaks ({peaks.length})
+            <Table className="w-3.5 h-3.5 shrink-0" />
+            <span>Peaks ({peaks.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('ramanlab')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
               activeTab === 'ramanlab'
                 ? 'bg-gradient-to-r from-purple-600 to-violet-800 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <Database className="w-3.5 h-3.5" />
-            RamanLab DB ({ramanLabDb.length})
+            <Database className="w-3.5 h-3.5 shrink-0" />
+            <span className="sm:hidden">DB ({ramanLabDb.length})</span>
+            <span className="hidden sm:inline">RamanLab DB ({ramanLabDb.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('reference')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
               activeTab === 'reference'
                 ? 'bg-gradient-to-r from-purple-600 to-violet-800 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <Compass className="w-3.5 h-3.5" />
-            Reference Match
+            <Compass className="w-3.5 h-3.5 shrink-0" />
+            <span className="sm:hidden">Ref Match</span>
+            <span className="hidden sm:inline">Reference Match</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('summary')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
               activeTab === 'summary'
                 ? 'bg-gradient-to-r from-purple-600 to-violet-800 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <FileText className="w-3.5 h-3.5" />
-            Summary
+            <FileText className="w-3.5 h-3.5 shrink-0" />
+            <span>Summary</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs w-full sm:w-auto">
           <select
             value={selectedReferenceId}
             onChange={(e) => onSelectReferenceId(e.target.value)}
-            className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:border-purple-600"
+            className="w-full sm:w-auto max-w-full truncate bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:border-purple-600"
           >
             {references.map((r) => (
               <option key={r.id} value={r.id}>
@@ -246,7 +248,7 @@ export const PeakAnalysisPanel: React.FC<PeakAnalysisPanelProps> = ({
       {/* TAB 3: REFERENCE MATCH */}
       {activeTab === 'reference' && activeReference && (
         <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/40">
+          <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/40 overflow-x-auto min-w-0">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs font-semibold text-slate-800">
                 {activeReference.name}{' '}
@@ -309,11 +311,11 @@ export const PeakAnalysisPanel: React.FC<PeakAnalysisPanelProps> = ({
           </div>
 
           <div className="border border-slate-200 rounded-lg p-3 bg-white">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 flex-wrap gap-1.5">
               <span className="text-xs font-semibold uppercase tracking-wider text-violet-800">
                 Candidate Assignments
               </span>
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-wrap">
                 {peaks.map((p, idx) => (
                   <button
                     key={p.id}

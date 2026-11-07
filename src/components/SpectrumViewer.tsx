@@ -215,11 +215,28 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
     return { yMajorTicks: majors, yMinorTicks: minors };
   }, [yMin, yMax]);
 
-  const getRelativeSvgX = (e: React.MouseEvent<SVGSVGElement>) => {
+  const getRelativeSvgXFromClientX = (clientX: number) => {
     if (!svgRef.current) return null;
     const rect = svgRef.current.getBoundingClientRect();
-    const relX = ((e.clientX - rect.left) / rect.width) * width;
+    const relX = ((clientX - rect.left) / rect.width) * width;
     return Math.max(pad.left, Math.min(width - pad.right, relX));
+  };
+
+  const getRelativeSvgX = (e: React.MouseEvent<SVGSVGElement>) =>
+    getRelativeSvgXFromClientX(e.clientX);
+
+  const updateHoverFromSvgX = (sx: number) => {
+    const targetWn = fromSvgX(sx);
+    let bestIdx = visibleIndices[0] ?? 0;
+    let bestDist = Infinity;
+    for (const i of visibleIndices) {
+      const d = Math.abs(x[i] - targetWn);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+    setHoverIndex(bestIdx);
   };
 
   const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -237,18 +254,16 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
     if (dragStartX !== null) {
       setDragCurrentX(sx);
     }
+    updateHoverFromSvgX(sx);
+  };
 
-    const targetWn = fromSvgX(sx);
-    let bestIdx = visibleIndices[0] ?? 0;
-    let bestDist = Infinity;
-    for (const i of visibleIndices) {
-      const d = Math.abs(x[i] - targetWn);
-      if (d < bestDist) {
-        bestDist = d;
-        bestIdx = i;
-      }
+  const handleTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    const sx = getRelativeSvgXFromClientX(touch.clientX);
+    if (sx !== null) {
+      updateHoverFromSvgX(sx);
     }
-    setHoverIndex(bestIdx);
   };
 
   const handleMouseUp = () => {
@@ -271,13 +286,13 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
   return (
     <div ref={containerRef} className="bg-white rounded-xl border border-slate-300 shadow-sm overflow-hidden">
       {/* Toolbar */}
-      <div className="px-4 py-2 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-white">
+      <div className="px-3 sm:px-4 py-2 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-white">
         <div className="flex items-center gap-1.5 flex-wrap">
           <div className="inline-flex rounded-lg p-0.5 bg-slate-100 text-xs font-medium">
             <button
               type="button"
               onClick={() => setViewMode('processed')}
-              className={`px-2.5 py-1 rounded-md transition ${
+              className={`px-2 sm:px-2.5 py-1 rounded-md transition ${
                 viewMode === 'processed'
                   ? 'bg-white text-slate-900 shadow-sm font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
@@ -288,13 +303,14 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
             <button
               type="button"
               onClick={() => setViewMode('raw')}
-              className={`px-2.5 py-1 rounded-md transition ${
+              className={`px-2 sm:px-2.5 py-1 rounded-md transition ${
                 viewMode === 'raw'
                   ? 'bg-white text-slate-900 shadow-sm font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Raw + Baseline
+              <span className="sm:hidden">Raw + BG</span>
+              <span className="hidden sm:inline">Raw + Baseline</span>
             </button>
           </div>
 
@@ -303,27 +319,33 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
               <button
                 type="button"
                 onClick={() => setShowIndividualPeaks(!showIndividualPeaks)}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
+                className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
                   showIndividualPeaks
                     ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-semibold'
                     : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                 }`}
               >
-                {showIndividualPeaks ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                Peak Fit Areas
+                {showIndividualPeaks ? (
+                  <Eye className="w-3.5 h-3.5 shrink-0" />
+                ) : (
+                  <EyeOff className="w-3.5 h-3.5 shrink-0" />
+                )}
+                <span className="sm:hidden">Peaks</span>
+                <span className="hidden sm:inline">Peak Areas</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setShowCompositeFit(!showCompositeFit)}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
+                className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
                   showCompositeFit
                     ? 'bg-red-50 border-red-300 text-red-800 font-semibold'
                     : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                 }`}
               >
-                <span className="w-2 h-2 rounded-full bg-red-600 inline-block" />
-                Fit Envelope
+                <span className="w-2 h-2 rounded-full bg-red-600 inline-block shrink-0" />
+                <span className="sm:hidden">Envelope</span>
+                <span className="hidden sm:inline">Fit Envelope</span>
               </button>
             </>
           )}
@@ -332,23 +354,25 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
             <button
               type="button"
               onClick={onToggleReferenceOverlay}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
+              className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium border transition max-w-[140px] sm:max-w-none truncate ${
                 showReferenceOverlay
                   ? 'bg-gradient-to-r from-purple-600 to-violet-800 border-violet-700 text-white'
                   : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
-              Ref: {referenceMaterial.name.split(' ')[0]}
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">
+                Ref: {referenceMaterial.name.split(' ')[0]}
+              </span>
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-slate-600">
+        <div className="flex items-center gap-2 text-xs text-slate-600 flex-wrap">
           {hoverIndex !== null && x[hoverIndex] !== undefined && (
-            <div className="font-mono bg-slate-100 px-2.5 py-1 rounded-md text-slate-900 border border-slate-300">
+            <div className="font-mono bg-slate-100 px-2 py-1 rounded-md text-slate-900 border border-slate-300 text-[11px] sm:text-xs">
               <span className="font-bold">{x[hoverIndex].toFixed(1)} cm⁻¹</span>
-              <span className="mx-1.5 text-slate-400">|</span>
+              <span className="mx-1 text-slate-400">|</span>
               <span>{activeYArray[hoverIndex]?.toFixed(2)}</span>
             </div>
           )}
@@ -357,17 +381,18 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
             <button
               type="button"
               onClick={() => setZoomDomain(null)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 text-white hover:bg-slate-800 font-medium transition"
+              className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg bg-slate-900 text-white hover:bg-slate-800 font-medium transition"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Reset Zoom
+              <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+              <span className="sm:hidden">Reset</span>
+              <span className="hidden sm:inline">Reset Zoom</span>
             </button>
           )}
         </div>
       </div>
 
       {/* SVG Canvas (Published Raman Spectrum Style) */}
-      <div className="relative select-none">
+      <div className="relative select-none touch-pan-y">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${width} ${height}`}
@@ -375,6 +400,8 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
+          onTouchStart={handleTouchMove}
+          onTouchMove={handleTouchMove}
           onMouseLeave={() => {
             setHoverIndex(null);
             setDragStartX(null);
@@ -696,6 +723,10 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
               peaks.map((peak, idx) => {
                 if (peak.center < xMin || peak.center > xMax) return null;
                 const px = toSvgX(peak.center);
+                const labelX = Math.max(
+                  pad.left + 36,
+                  Math.min(width - pad.right - 36, px)
+                );
                 const py = toSvgY(peak.amplitude);
                 const isSelected = peak.id === selectedPeakId;
 
@@ -743,7 +774,7 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
 
                     {/* Bold Wavenumber (e.g. 351, 418, 520) */}
                     <text
-                      x={px}
+                      x={labelX}
                       y={arrowStartY - 4}
                       textAnchor="middle"
                       fill={isSelected ? '#dc2626' : '#0f172a'}
@@ -758,7 +789,7 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                     {/* Italic Vibrational Mode Assignment above wavenumber */}
                     {shortMode && (
                       <text
-                        x={px}
+                        x={labelX}
                         y={arrowStartY - 16}
                         textAnchor="middle"
                         fill="#1e293b"

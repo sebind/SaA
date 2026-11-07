@@ -772,7 +772,7 @@ export const UVVisViewer: React.FC<UVVisViewerProps> = ({
             y={0}
             textAnchor="end"
             fill="#0f172a"
-            fontSize="11.5"
+            fontSize="11"
             fontFamily="Inter, system-ui, sans-serif"
             fontWeight="700"
           >
@@ -780,7 +780,7 @@ export const UVVisViewer: React.FC<UVVisViewerProps> = ({
           </text>
           <text
             x={0}
-            y={15}
+            y={14}
             textAnchor="end"
             fill="#247c92"
             fontSize="10"
@@ -823,10 +823,10 @@ export const UVVisViewer: React.FC<UVVisViewerProps> = ({
     );
   };
 
-  const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+  const updateHoverFromClientX = (clientX: number) => {
     if (!svgRef.current || wavelengthNm.length === 0) return;
     const rect = svgRef.current.getBoundingClientRect();
-    const relX = ((e.clientX - rect.left) / rect.width) * width;
+    const relX = ((clientX - rect.left) / rect.width) * width;
 
     if (layoutMode === 'dual') {
       // Left panel is [60..445], Right panel is [520..915]
@@ -886,70 +886,84 @@ export const UVVisViewer: React.FC<UVVisViewerProps> = ({
     }
   };
 
+  const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    updateHoverFromClientX(e.clientX);
+  };
+
+  const handleSvgTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
+    const touch = e.touches[0];
+    if (touch) {
+      updateHoverFromClientX(touch.clientX);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-powder-300 shadow-sm overflow-hidden">
       {/* Toolbar */}
-      <div className="px-4 py-2 border-b border-powder-200 flex flex-wrap items-center justify-between gap-2 bg-white">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <div className="inline-flex rounded-lg p-0.5 bg-powder-100/80 text-xs font-medium">
+      <div className="px-3 sm:px-4 py-2 border-b border-powder-200 flex flex-wrap items-center justify-between gap-2 bg-white">
+        <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:inline-flex w-full sm:w-auto gap-1 sm:gap-0.5 rounded-lg p-1 sm:p-0.5 bg-powder-100/80 text-xs font-medium">
             <button
               type="button"
               onClick={() => setLayoutMode('dual')}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
+              className={`inline-flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1 rounded-md transition truncate ${
                 layoutMode === 'dual'
                   ? 'bg-racing-500 text-white shadow-sm font-semibold'
                   : 'text-powder-900 hover:text-slate-900'
               }`}
             >
-              <Columns className="w-3.5 h-3.5" />
-              {isDrs ? 'Kubelka-Munk + Tauc (Dual)' : 'α vs. λ + Tauc Plot (Dual)'}
+              <Columns className="w-3.5 h-3.5 shrink-0" />
+              <span className="md:hidden truncate">Dual Plot</span>
+              <span className="hidden md:inline truncate">
+                {isDrs ? 'K-M + Tauc (Dual)' : 'α vs. λ + Tauc (Dual)'}
+              </span>
             </button>
 
             <button
               type="button"
               onClick={() => setLayoutMode('tauc-only')}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
+              className={`inline-flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1 rounded-md transition truncate ${
                 layoutMode === 'tauc-only'
                   ? 'bg-racing-500 text-white shadow-sm font-semibold'
                   : 'text-powder-900 hover:text-slate-900'
               }`}
             >
-              <Maximize2 className="w-3 h-3" />
-              {isDrs ? 'Kubelka-Munk Tauc' : 'Tauc Plot'}
+              <Maximize2 className="w-3 h-3 shrink-0" />
+              <span className="truncate">{isDrs ? 'K-M Tauc' : 'Tauc Plot'}</span>
             </button>
 
             <button
               type="button"
               onClick={() => setLayoutMode('spectrum-only')}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
+              className={`inline-flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1 rounded-md transition truncate ${
                 layoutMode === 'spectrum-only'
                   ? 'bg-racing-500 text-white shadow-sm font-semibold'
                   : 'text-powder-900 hover:text-slate-900'
               }`}
             >
-              <Maximize2 className="w-3 h-3" />
-              {isDrs ? 'F(R∞) vs. λ' : 'α vs. Wavelength'}
+              <Maximize2 className="w-3 h-3 shrink-0" />
+              <span className="truncate">{isDrs ? 'F(R∞) vs. λ' : 'α vs. λ'}</span>
             </button>
 
             <button
               type="button"
               onClick={() => setLayoutMode('raw-only')}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
+              className={`inline-flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1 rounded-md transition truncate ${
                 layoutMode === 'raw-only'
                   ? 'bg-racing-500 text-white shadow-sm font-semibold'
                   : 'text-powder-900 hover:text-slate-900'
               }`}
             >
-              <Eye className="w-3 h-3" />
-              Raw Signal
+              <Eye className="w-3 h-3 shrink-0" />
+              <span className="truncate">Raw Signal</span>
             </button>
           </div>
         </div>
 
         {/* Live Band Gap Pill + Cursor Readout */}
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs flex-wrap">
           {hoverIdx !== null && wavelengthNm[hoverIdx] !== undefined && (
-            <div className="font-mono bg-powder-50 px-2.5 py-1 rounded-md text-slate-900 border border-powder-300">
+            <div className="font-mono bg-powder-50 px-2 py-1 rounded-md text-slate-900 border border-powder-300 text-[11px] sm:text-xs">
               <span className="font-bold text-powder-900">
                 {wavelengthNm[hoverIdx].toFixed(1)} nm
               </span>
@@ -967,19 +981,21 @@ export const UVVisViewer: React.FC<UVVisViewerProps> = ({
           )}
 
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-racing-50 border border-racing-200 text-racing-700 font-mono font-bold">
-            <span className="w-2 h-2 rounded-full bg-racing-500 inline-block" />
+            <span className="w-2 h-2 rounded-full bg-racing-500 inline-block shrink-0" />
             <span>Eg = {fit.bandGapEg.toFixed(2)} eV</span>
           </div>
         </div>
       </div>
 
       {/* SVG Canvas */}
-      <div className="relative select-none">
+      <div className="relative select-none touch-pan-y">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${width} ${height}`}
           className="w-full h-auto block cursor-crosshair bg-white"
           onMouseMove={handleSvgMouseMove}
+          onTouchStart={handleSvgTouchMove}
+          onTouchMove={handleSvgTouchMove}
           onMouseLeave={() => setHoverIdx(null)}
         >
           {layoutMode === 'dual' && (
@@ -990,8 +1006,8 @@ export const UVVisViewer: React.FC<UVVisViewerProps> = ({
                 plotW: 385,
                 plotH: 355,
                 panelBadge: isDrs
-                  ? '(a) Kubelka-Munk F(R∞) vs. Wavelength'
-                  : '(a) Absorption Coefficient α vs. Wavelength'
+                  ? '(a) Kubelka-Munk F(R∞) vs. λ'
+                  : '(a) Absorption α vs. Wavelength'
               })}
               {renderTaucSubPlot({
                 left: 525,
@@ -999,8 +1015,8 @@ export const UVVisViewer: React.FC<UVVisViewerProps> = ({
                 plotW: 390,
                 plotH: 355,
                 panelBadge: isDrs
-                  ? '(b) Kubelka-Munk Tauc Plot & Eg Extrapolation'
-                  : '(b) Tauc Plot & Automatic Eg Extrapolation'
+                  ? '(b) K-M Tauc Plot (Eg Fit)'
+                  : '(b) Tauc Plot (Eg Fit)'
               })}
             </>
           )}

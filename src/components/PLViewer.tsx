@@ -276,11 +276,28 @@ export const PLViewer: React.FC<PLViewerProps> = ({
     return { yMajorTicks: majors, yMinorTicks: minors };
   }, [yMin, yMax]);
 
-  const getRelativeSvgX = (e: React.MouseEvent<SVGSVGElement>) => {
+  const getRelativeSvgXFromClientX = (clientX: number) => {
     if (!svgRef.current) return null;
     const rect = svgRef.current.getBoundingClientRect();
-    const relX = ((e.clientX - rect.left) / rect.width) * width;
+    const relX = ((clientX - rect.left) / rect.width) * width;
     return Math.max(pad.left, Math.min(width - pad.right, relX));
+  };
+
+  const getRelativeSvgX = (e: React.MouseEvent<SVGSVGElement>) =>
+    getRelativeSvgXFromClientX(e.clientX);
+
+  const updateHoverFromSvgX = (sx: number) => {
+    const targetX = fromSvgX(sx);
+    let bestIdx = visibleIndices[0] ?? 0;
+    let bestDist = Infinity;
+    for (const i of visibleIndices) {
+      const d = Math.abs(xArr[i] - targetX);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+    setHoverIndex(bestIdx);
   };
 
   const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -297,17 +314,16 @@ export const PLViewer: React.FC<PLViewerProps> = ({
     if (dragStartX !== null) {
       setDragCurrentX(sx);
     }
-    const targetX = fromSvgX(sx);
-    let bestIdx = visibleIndices[0] ?? 0;
-    let bestDist = Infinity;
-    for (const i of visibleIndices) {
-      const d = Math.abs(xArr[i] - targetX);
-      if (d < bestDist) {
-        bestDist = d;
-        bestIdx = i;
-      }
+    updateHoverFromSvgX(sx);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    const sx = getRelativeSvgXFromClientX(touch.clientX);
+    if (sx !== null) {
+      updateHoverFromSvgX(sx);
     }
-    setHoverIndex(bestIdx);
   };
 
   const handleMouseUp = () => {
@@ -344,104 +360,110 @@ export const PLViewer: React.FC<PLViewerProps> = ({
       className="bg-white rounded-xl border border-sage-200 shadow-sm overflow-hidden"
     >
       {/* Toolbar */}
-      <div className="px-4 py-2 border-b border-sage-100 flex flex-wrap items-center justify-between gap-2 bg-white">
+      <div className="px-3 sm:px-4 py-2 border-b border-sage-100 flex flex-wrap items-center justify-between gap-2 bg-white">
         <div className="flex items-center gap-1.5 flex-wrap">
           <div className="inline-flex rounded-lg p-0.5 bg-sage-50 border border-sage-200 text-xs font-medium">
             <button
               type="button"
               onClick={() => setViewMode('processed')}
-              className={`px-2.5 py-1 rounded-md transition ${
+              className={`px-2 sm:px-2.5 py-1 rounded-md transition ${
                 viewMode === 'processed'
                   ? 'bg-maroon-800 text-white shadow-sm font-semibold'
                   : 'text-maroon-900 hover:text-sage-700'
               }`}
             >
-              Processed PL
+              <span className="sm:hidden">Processed</span>
+              <span className="hidden sm:inline">Processed PL</span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode('raw-envelope')}
-              className={`px-2.5 py-1 rounded-md transition ${
+              className={`px-2 sm:px-2.5 py-1 rounded-md transition ${
                 viewMode === 'raw-envelope'
                   ? 'bg-maroon-800 text-white shadow-sm font-semibold'
                   : 'text-maroon-900 hover:text-sage-700'
               }`}
             >
-              Raw + Baseline + Fit
+              <span className="sm:hidden">Raw + Fit</span>
+              <span className="hidden sm:inline">Raw + Baseline + Fit</span>
             </button>
           </div>
 
           <button
             type="button"
             onClick={() => setShowIndividualPeaks(!showIndividualPeaks)}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
+            className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
               showIndividualPeaks
                 ? 'bg-sage-50 border-sage-300 text-maroon-900 font-semibold'
                 : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
             }`}
           >
             {showIndividualPeaks ? (
-              <Eye className="w-3.5 h-3.5 text-sage-700" />
+              <Eye className="w-3.5 h-3.5 text-sage-700 shrink-0" />
             ) : (
-              <EyeOff className="w-3.5 h-3.5" />
+              <EyeOff className="w-3.5 h-3.5 shrink-0" />
             )}
-            Sub-Bands ({peaks.length})
+            <span className="sm:hidden">Bands ({peaks.length})</span>
+            <span className="hidden sm:inline">Sub-Bands ({peaks.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowCompositeFit(!showCompositeFit)}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
+            className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
               showCompositeFit
                 ? 'bg-maroon-50 border-maroon-300 text-maroon-900 font-semibold'
                 : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-sage-600 inline-block" />
-            Σ Fit (R² = {envelopeRSquared.toFixed(4)})
+            <span className="w-2 h-2 rounded-full bg-sage-600 inline-block shrink-0" />
+            <span className="sm:hidden">Σ Fit</span>
+            <span className="hidden sm:inline">
+              Σ Fit (R² = {envelopeRSquared.toFixed(4)})
+            </span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowResiduals(!showResiduals)}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
+            className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
               showResiduals
                 ? 'bg-maroon-900 border-maroon-900 text-white font-semibold'
                 : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
             }`}
           >
-            <Activity className="w-3.5 h-3.5 text-sage-300" />
-            Residuals
+            <Activity className="w-3.5 h-3.5 text-sage-300 shrink-0" />
+            <span>Residuals</span>
           </button>
 
           {referenceMaterial && (
             <button
               type="button"
               onClick={onToggleReferenceOverlay}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
+              className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
                 showReferenceOverlay
                   ? 'bg-gradient-to-r from-maroon-800 to-sage-600 border-maroon-800 text-white'
                   : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
-              Ref: {referenceMaterial.formula}
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span>Ref: {referenceMaterial.formula}</span>
             </button>
           )}
         </div>
 
         {/* Right Side: Live Hover Readout + CIE 1931 Swatch Pill */}
-        <div className="flex items-center gap-2 text-xs text-slate-600">
+        <div className="flex items-center gap-2 text-xs text-slate-600 flex-wrap">
           {hoverIndex !== null && wavelengthNm[hoverIndex] !== undefined ? (
-            <div className="font-mono bg-sage-50 px-2.5 py-1 rounded-md text-maroon-950 border border-sage-200">
+            <div className="font-mono bg-sage-50 px-2 py-1 rounded-md text-maroon-950 border border-sage-200 text-[11px] sm:text-xs">
               <span className="font-bold text-maroon-800">
                 λ: {wavelengthNm[hoverIndex].toFixed(1)} nm
               </span>
-              <span className="mx-1.5 text-slate-300">|</span>
+              <span className="mx-1 text-slate-300">|</span>
               <span className="text-sage-700 font-semibold">
                 hν: {photonEnergyEv[hoverIndex]?.toFixed(3)} eV
               </span>
-              <span className="mx-1.5 text-slate-300">|</span>
+              <span className="mx-1 text-slate-300">|</span>
               <span>
                 {Math.abs(activeYArray[hoverIndex]) >= 100
                   ? activeYArray[hoverIndex]?.toFixed(0)
@@ -450,7 +472,7 @@ export const PLViewer: React.FC<PLViewerProps> = ({
             </div>
           ) : (
             <div
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sage-50/80 border border-sage-200 text-[11px] font-mono text-maroon-900"
+              className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-md bg-sage-50/80 border border-sage-200 text-[11px] font-mono text-maroon-900"
               title={`CIE 1931 Chromaticity: (${cie1931.x.toFixed(4)}, ${cie1931.y.toFixed(4)}) — ${cie1931.colorName}`}
             >
               <span
@@ -470,17 +492,18 @@ export const PLViewer: React.FC<PLViewerProps> = ({
             <button
               type="button"
               onClick={() => setZoomDomain(null)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-maroon-800 text-white hover:bg-sage-600 font-medium transition"
+              className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg bg-maroon-800 text-white hover:bg-sage-600 font-medium transition"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Reset Zoom
+              <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+              <span className="sm:hidden">Reset</span>
+              <span className="hidden sm:inline">Reset Zoom</span>
             </button>
           )}
         </div>
       </div>
 
       {/* SVG Canvas (Publication Steady-State PL Style in Deep Maroon & Sage Green) */}
-      <div className="relative select-none">
+      <div className="relative select-none touch-pan-y">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${width} ${height}`}
@@ -488,6 +511,8 @@ export const PLViewer: React.FC<PLViewerProps> = ({
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
+          onTouchStart={handleTouchMove}
+          onTouchMove={handleTouchMove}
           onMouseLeave={() => {
             setHoverIndex(null);
             setDragStartX(null);

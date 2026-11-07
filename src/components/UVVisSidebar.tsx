@@ -64,15 +64,15 @@ export const UVVisSidebar: React.FC<UVVisSidebarProps> = ({
   const activeManualMax = config.manualEnergyRange?.[1] ?? detectedFitRangeEv[1];
 
   return (
-    <aside className="w-full lg:w-72 shrink-0 flex flex-col gap-3">
+    <aside className="w-full lg:w-72 shrink-0 grid grid-cols-1 md:grid-cols-3 lg:flex lg:flex-col gap-3">
       {/* 1. Spectrum Import & Presets */}
-      <div className="bg-white rounded-xl border border-powder-200 p-3.5 shadow-sm space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-powder-800">
-            <FileSpreadsheet className="w-3.5 h-3.5 text-racing-500" />
-            <span>UV-Vis-NIR Spectrum</span>
+      <div className="bg-white rounded-xl border border-powder-200 p-3.5 shadow-sm space-y-2.5 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-powder-800 truncate">
+            <FileSpreadsheet className="w-3.5 h-3.5 text-racing-500 shrink-0" />
+            <span className="truncate">UV-Vis-NIR</span>
           </div>
-          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-powder-100 text-powder-800">
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-powder-100 text-powder-800 shrink-0">
             {config.measurementMode === 'drs' ? 'DRS Mode' : 'Thin Film'}
           </span>
         </div>
@@ -91,10 +91,10 @@ export const UVVisSidebar: React.FC<UVVisSidebarProps> = ({
             className="hidden"
           />
           <Upload className="w-4 h-4 text-racing-500 mx-auto mb-0.5" />
-          <p className="text-xs font-medium text-slate-700">
+          <p className="text-xs font-medium text-slate-700 truncate">
             Import <span className="text-racing-600 font-semibold">CSV / TXT</span> Spectrum
           </p>
-          <p className="text-[10px] text-slate-500 mt-0.5">
+          <p className="text-[10px] text-slate-500 mt-0.5 truncate">
             Wavelength (nm) vs. Abs, %T, or %R
           </p>
         </div>
@@ -109,7 +109,7 @@ export const UVVisSidebar: React.FC<UVVisSidebarProps> = ({
                 type="button"
                 onClick={() => onSelectSample(s)}
                 title={`${s.name} — ${s.subtitle}`}
-                className={`text-left px-2.5 py-1.5 rounded-lg border text-xs transition truncate font-medium ${
+                className={`text-left px-2 py-1.5 rounded-lg border text-xs transition truncate font-medium ${
                   active
                     ? 'bg-gradient-to-r from-racing-500 to-racing-600 border-racing-600 text-white shadow-sm'
                     : 'bg-powder-50/60 border-powder-200 text-slate-700 hover:border-racing-300 hover:bg-powder-100/60'
@@ -130,17 +130,17 @@ export const UVVisSidebar: React.FC<UVVisSidebarProps> = ({
       </div>
 
       {/* 2. Measurement Mode & Sample Thickness */}
-      <div className="bg-white rounded-xl border border-powder-200 p-3.5 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-powder-800">
-            <Layers className="w-3.5 h-3.5 text-racing-500" />
-            <span>Sample & Mode</span>
+      <div className="bg-white rounded-xl border border-powder-200 p-3.5 shadow-sm space-y-3 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-powder-800 truncate">
+            <Layers className="w-3.5 h-3.5 text-racing-500 shrink-0" />
+            <span className="truncate">Sample & Mode</span>
           </div>
           <button
             type="button"
             onClick={onResetConfig}
             title="Reset parameters"
-            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-racing-600 transition"
+            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-racing-600 transition shrink-0"
           >
             <RotateCcw className="w-3 h-3" />
           </button>
@@ -155,7 +155,7 @@ export const UVVisSidebar: React.FC<UVVisSidebarProps> = ({
             {(
               [
                 ['thin-film', 'Thin Film (α)'],
-                ['drs', 'DRS (Kubelka-Munk)']
+                ['drs', 'DRS (K-M)']
               ] as [MeasurementMode, string][]
             ).map(([val, label]) => (
               <button
@@ -167,7 +167,7 @@ export const UVVisSidebar: React.FC<UVVisSidebarProps> = ({
                     inputSignalType: val === 'drs' ? 'reflectance' : 'absorbance'
                   })
                 }
-                className={`py-1.5 px-2 rounded-md transition text-[11px] ${
+                className={`py-1.5 px-1.5 rounded-md transition text-[11px] truncate ${
                   config.measurementMode === val
                     ? 'bg-gradient-to-r from-racing-500 to-racing-600 text-white shadow-sm font-semibold'
                     : 'text-powder-900 hover:text-slate-900'
@@ -263,16 +263,16 @@ export const UVVisSidebar: React.FC<UVVisSidebarProps> = ({
             {(
               [
                 ['auto', 'Auto'],
-                ['absorbance', 'Abs (A)'],
-                ['transmittance', '%T / T'],
-                ['reflectance', '%R / R']
+                ['absorbance', 'Abs'],
+                ['transmittance', '%T'],
+                ['reflectance', '%R']
               ] as [InputSignalType, string][]
             ).map(([val, label]) => (
               <button
                 key={val}
                 type="button"
                 onClick={() => onChangeConfig({ inputSignalType: val })}
-                className={`py-1 rounded-md transition ${
+                className={`py-1 px-1 rounded-md transition truncate ${
                   config.inputSignalType === val
                     ? 'bg-white text-racing-600 shadow-sm font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
@@ -310,10 +310,10 @@ export const UVVisSidebar: React.FC<UVVisSidebarProps> = ({
       </div>
 
       {/* 3. Tauc Plot & Band Gap Extrapolation */}
-      <div className="bg-white rounded-xl border border-powder-200 p-3.5 shadow-sm space-y-2.5">
+      <div className="bg-white rounded-xl border border-powder-200 p-3.5 shadow-sm space-y-2.5 min-w-0">
         <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-powder-800">
-          <Zap className="w-3.5 h-3.5 text-racing-500" />
-          <span>Tauc Extrapolation</span>
+          <Zap className="w-3.5 h-3.5 text-racing-500 shrink-0" />
+          <span className="truncate">Tauc Extrapolation</span>
         </div>
 
         <div>
@@ -323,10 +323,10 @@ export const UVVisSidebar: React.FC<UVVisSidebarProps> = ({
           <div className="grid grid-cols-2 gap-1.5">
             {(
               [
-                ['direct-allowed', 'Direct (n = ½)', '(αhν)²'],
-                ['indirect-allowed', 'Indirect (n = 2)', '(αhν)¹ᐟ²'],
-                ['direct-forbidden', 'Direct Forb. (n = 3/2)', '(αhν)²ᐟ³'],
-                ['indirect-forbidden', 'Indirect Forb. (n = 3)', '(αhν)¹ᐟ³']
+                ['direct-allowed', 'Direct (n=½)', '(αhν)²'],
+                ['indirect-allowed', 'Indirect (n=2)', '(αhν)¹ᐟ²'],
+                ['direct-forbidden', 'Dir. Forb. (3/2)', '(αhν)²ᐟ³'],
+                ['indirect-forbidden', 'Ind. Forb. (3)', '(αhν)¹ᐟ³']
               ] as [TransitionType, string, string][]
             ).map(([val, title, formula]) => {
               const active = config.transitionType === val;
@@ -339,15 +339,15 @@ export const UVVisSidebar: React.FC<UVVisSidebarProps> = ({
                   key={val}
                   type="button"
                   onClick={() => onChangeConfig({ transitionType: val })}
-                  className={`p-1.5 rounded-lg border text-left transition ${
+                  className={`p-1.5 rounded-lg border text-left transition min-w-0 ${
                     active
                       ? 'bg-gradient-to-r from-racing-500 to-racing-600 border-racing-600 text-white shadow-sm'
                       : 'bg-powder-50/50 border-powder-200 text-slate-700 hover:border-racing-300'
                   }`}
                 >
-                  <div className="text-[11px] font-semibold leading-tight">{title}</div>
+                  <div className="text-[11px] font-semibold leading-tight truncate">{title}</div>
                   <div
-                    className={`text-[10px] font-mono mt-0.5 ${
+                    className={`text-[10px] font-mono mt-0.5 truncate ${
                       active ? 'text-orange-100' : 'text-powder-700'
                     }`}
                   >

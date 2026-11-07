@@ -107,11 +107,14 @@ export const UVVisAnalysisPanel: React.FC<UVVisAnalysisPanelProps> = ({
   return (
     <div className="bg-white rounded-xl border border-powder-200 shadow-sm overflow-hidden">
       {/* Header Bar */}
-      <div className="px-4 py-2.5 border-b border-powder-200 flex flex-wrap items-center justify-between gap-2 bg-powder-50/50">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-racing-500" />
+      <div className="px-3 sm:px-4 py-2.5 border-b border-powder-200 flex flex-wrap items-center justify-between gap-2 bg-powder-50/50">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <Sparkles className="w-4 h-4 text-racing-500 shrink-0" />
           <h2 className="text-xs font-bold uppercase tracking-wider text-powder-900">
-            Optical Band Gap & Tauc Extrapolation Report
+            <span className="sm:hidden">Band Gap & Tauc Report</span>
+            <span className="hidden sm:inline">
+              Optical Band Gap & Tauc Extrapolation Report
+            </span>
           </h2>
           <span
             className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${regimeInfo.colorClass}`}
@@ -123,17 +126,18 @@ export const UVVisAnalysisPanel: React.FC<UVVisAnalysisPanelProps> = ({
         <button
           type="button"
           onClick={handleCopyParagraph}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-powder-300 bg-white hover:bg-racing-50 hover:border-racing-300 text-xs font-medium text-slate-700 hover:text-racing-700 transition"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-powder-300 bg-white hover:bg-racing-50 hover:border-racing-300 text-xs font-medium text-slate-700 hover:text-racing-700 transition shrink-0"
         >
           {copiedReport ? (
             <>
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="text-emerald-700 font-semibold">Copied Summary</span>
+              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span className="text-emerald-700 font-semibold">Copied</span>
             </>
           ) : (
             <>
-              <Copy className="w-3.5 h-3.5 text-racing-500" />
-              <span>Copy Manuscript Text</span>
+              <Copy className="w-3.5 h-3.5 text-racing-500 shrink-0" />
+              <span className="sm:hidden">Copy Text</span>
+              <span className="hidden sm:inline">Copy Manuscript Text</span>
             </>
           )}
         </button>

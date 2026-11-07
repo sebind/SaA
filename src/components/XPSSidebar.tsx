@@ -95,16 +95,16 @@ export const XPSSidebar: React.FC<XPSSidebarProps> = ({
   };
 
   return (
-    <aside className="w-full lg:w-72 shrink-0 flex flex-col gap-3">
+    <aside className="w-full lg:w-72 shrink-0 grid grid-cols-1 md:grid-cols-3 lg:flex lg:flex-col gap-3">
       {/* 1. XPS Spectrum Import & Core-Level Presets */}
-      <div className="bg-white rounded-xl border border-deepblue-200 p-3.5 shadow-sm space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-deepblue-800">
-            <FileSpreadsheet className="w-3.5 h-3.5 text-bubblegum-500" />
-            <span>XPS Core-Level</span>
+      <div className="bg-white rounded-xl border border-deepblue-200 p-3.5 shadow-sm space-y-2.5 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-deepblue-800 truncate">
+            <FileSpreadsheet className="w-3.5 h-3.5 text-bubblegum-500 shrink-0" />
+            <span className="truncate">XPS Core-Level</span>
           </div>
-          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-bubblegum-50 text-bubblegum-700 border border-bubblegum-200">
-            {config.xraySource === 'Al-Ka' ? 'Al Kα 1486.6 eV' : 'Mg Kα 1253.6 eV'}
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-bubblegum-50 text-bubblegum-700 border border-bubblegum-200 shrink-0">
+            {config.xraySource === 'Al-Ka' ? 'Al Kα 1486.6' : 'Mg Kα 1253.6'}
           </span>
         </div>
 
@@ -122,10 +122,10 @@ export const XPSSidebar: React.FC<XPSSidebarProps> = ({
             className="hidden"
           />
           <Upload className="w-4 h-4 text-bubblegum-500 mx-auto mb-0.5" />
-          <p className="text-xs font-medium text-deepblue-900">
+          <p className="text-xs font-medium text-deepblue-900 truncate">
             Import <span className="text-bubblegum-600 font-semibold">CSV / TXT</span> Spectrum
           </p>
-          <p className="text-[10px] text-slate-500 mt-0.5">
+          <p className="text-[10px] text-slate-500 mt-0.5 truncate">
             Binding Energy (eV) vs. CPS / Counts
           </p>
         </div>
@@ -139,7 +139,7 @@ export const XPSSidebar: React.FC<XPSSidebarProps> = ({
                 type="button"
                 onClick={() => onSelectSample(s)}
                 title={`${s.name} — ${s.subtitle}`}
-                className={`text-left px-2.5 py-1.5 rounded-lg border text-xs transition truncate font-medium ${
+                className={`text-left px-2 py-1.5 rounded-lg border text-xs transition truncate font-medium ${
                   active
                     ? 'bg-gradient-to-r from-deepblue-800 via-deepblue-700 to-bubblegum-600 border-deepblue-800 text-white shadow-sm'
                     : 'bg-deepblue-50/50 border-deepblue-100 text-deepblue-900 hover:border-bubblegum-300 hover:bg-bubblegum-50/40'
@@ -148,7 +148,7 @@ export const XPSSidebar: React.FC<XPSSidebarProps> = ({
                 <div className="flex items-center justify-between gap-1">
                   <span className="truncate font-bold">{s.coreLevel}</span>
                   <span
-                    className={`text-[9px] px-1 rounded font-mono ${
+                    className={`text-[9px] px-1 rounded font-mono shrink-0 ${
                       active
                         ? 'bg-white/20 text-white'
                         : 'bg-white text-bubblegum-600 border border-bubblegum-200'
@@ -171,17 +171,17 @@ export const XPSSidebar: React.FC<XPSSidebarProps> = ({
       </div>
 
       {/* 2. Background Subtraction, Charge Shift & Axis Convention */}
-      <div className="bg-white rounded-xl border border-deepblue-200 p-3.5 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-deepblue-800">
-            <Sliders className="w-3.5 h-3.5 text-bubblegum-500" />
-            <span>Background & Energy</span>
+      <div className="bg-white rounded-xl border border-deepblue-200 p-3.5 shadow-sm space-y-3 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-deepblue-800 truncate">
+            <Sliders className="w-3.5 h-3.5 text-bubblegum-500 shrink-0" />
+            <span className="truncate">Background & Energy</span>
           </div>
           <button
             type="button"
             onClick={onResetConfig}
             title="Reset XPS parameters"
-            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-bubblegum-600 transition"
+            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-bubblegum-600 transition shrink-0"
           >
             <RotateCcw className="w-3 h-3" />
           </button>
@@ -210,7 +210,7 @@ export const XPSSidebar: React.FC<XPSSidebarProps> = ({
                 key={val}
                 type="button"
                 onClick={() => onChangeConfig({ backgroundMethod: val })}
-                className={`py-1 rounded-md transition ${
+                className={`py-1 px-0.5 rounded-md transition truncate ${
                   config.backgroundMethod === val
                     ? 'bg-deepblue-800 text-white shadow-sm font-semibold'
                     : 'text-deepblue-900 hover:text-bubblegum-600'
@@ -266,9 +266,9 @@ export const XPSSidebar: React.FC<XPSSidebarProps> = ({
               <button
                 type="button"
                 onClick={handleCalibrateToC1s}
-                className="w-full py-1 px-2 rounded-md bg-bubblegum-50 hover:bg-bubblegum-100 border border-bubblegum-200 text-[10px] font-semibold text-bubblegum-700 transition"
+                className="w-full py-1 px-2 rounded-md bg-bubblegum-50 hover:bg-bubblegum-100 border border-bubblegum-200 text-[10px] font-semibold text-bubblegum-700 transition truncate"
               >
-                Align Main C 1s Peak → 284.80 eV (Adv. C)
+                Align C 1s → 284.80 eV (Adv. C)
               </button>
             )}
         </div>
@@ -403,23 +403,23 @@ export const XPSSidebar: React.FC<XPSSidebarProps> = ({
       </div>
 
       {/* 3. Auto Peak Deconvolution & GL(m) Line Shape */}
-      <div className="bg-white rounded-xl border border-deepblue-200 p-3.5 shadow-sm space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-deepblue-800">
-            <Atom className="w-3.5 h-3.5 text-bubblegum-500" />
-            <span>Auto Peak Fitting</span>
+      <div className="bg-white rounded-xl border border-deepblue-200 p-3.5 shadow-sm space-y-2.5 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-deepblue-800 truncate">
+            <Atom className="w-3.5 h-3.5 text-bubblegum-500 shrink-0" />
+            <span className="truncate">Auto Peak Fitting</span>
           </div>
           <button
             type="button"
             onClick={() => onChangeConfig({ autoFit: !config.autoFit })}
-            className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition inline-flex items-center gap-1 ${
+            className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition inline-flex items-center gap-1 shrink-0 ${
               config.autoFit
                 ? 'bg-bubblegum-500 text-white shadow-sm'
                 : 'bg-slate-100 text-slate-600'
             }`}
           >
-            <Sparkles className="w-2.5 h-2.5" />
-            {config.autoFit ? 'Auto Fit ON' : 'Manual Only'}
+            <Sparkles className="w-2.5 h-2.5 shrink-0" />
+            <span>{config.autoFit ? 'Auto ON' : 'Manual'}</span>
           </button>
         </div>
 

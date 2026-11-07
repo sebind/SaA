@@ -260,11 +260,28 @@ export const XPSViewer: React.FC<XPSViewerProps> = ({
     return { yMajorTicks: majors, yMinorTicks: minors };
   }, [yMin, yMax]);
 
-  const getRelativeSvgX = (e: React.MouseEvent<SVGSVGElement>) => {
+  const getRelativeSvgXFromClientX = (clientX: number) => {
     if (!svgRef.current) return null;
     const rect = svgRef.current.getBoundingClientRect();
-    const relX = ((e.clientX - rect.left) / rect.width) * width;
+    const relX = ((clientX - rect.left) / rect.width) * width;
     return Math.max(pad.left, Math.min(width - pad.right, relX));
+  };
+
+  const getRelativeSvgX = (e: React.MouseEvent<SVGSVGElement>) =>
+    getRelativeSvgXFromClientX(e.clientX);
+
+  const updateHoverFromSvgX = (sx: number) => {
+    const targetBe = fromSvgX(sx);
+    let bestIdx = visibleIndices[0] ?? 0;
+    let bestDist = Infinity;
+    for (const i of visibleIndices) {
+      const d = Math.abs(x[i] - targetBe);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+    setHoverIndex(bestIdx);
   };
 
   const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -281,17 +298,16 @@ export const XPSViewer: React.FC<XPSViewerProps> = ({
     if (dragStartX !== null) {
       setDragCurrentX(sx);
     }
-    const targetBe = fromSvgX(sx);
-    let bestIdx = visibleIndices[0] ?? 0;
-    let bestDist = Infinity;
-    for (const i of visibleIndices) {
-      const d = Math.abs(x[i] - targetBe);
-      if (d < bestDist) {
-        bestDist = d;
-        bestIdx = i;
-      }
+    updateHoverFromSvgX(sx);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    const sx = getRelativeSvgXFromClientX(touch.clientX);
+    if (sx !== null) {
+      updateHoverFromSvgX(sx);
     }
-    setHoverIndex(bestIdx);
   };
 
   const handleMouseUp = () => {
@@ -320,103 +336,120 @@ export const XPSViewer: React.FC<XPSViewerProps> = ({
       className="bg-white rounded-xl border border-deepblue-200 shadow-sm overflow-hidden"
     >
       {/* Toolbar */}
-      <div className="px-4 py-2 border-b border-deepblue-100 flex flex-wrap items-center justify-between gap-2 bg-white">
+      <div className="px-3 sm:px-4 py-2 border-b border-deepblue-100 flex flex-wrap items-center justify-between gap-2 bg-white">
         <div className="flex items-center gap-1.5 flex-wrap">
           <div className="inline-flex rounded-lg p-0.5 bg-deepblue-50 border border-deepblue-100 text-xs font-medium">
             <button
               type="button"
               onClick={() => setViewMode('casa-envelope')}
-              className={`px-2.5 py-1 rounded-md transition ${
+              className={`px-2 sm:px-2.5 py-1 rounded-md transition ${
                 viewMode === 'casa-envelope'
                   ? 'bg-deepblue-800 text-white shadow-sm font-semibold'
                   : 'text-deepblue-900 hover:text-bubblegum-600'
               }`}
             >
-              Raw + {config.backgroundMethod === 'none' ? 'Envelope' : `${config.backgroundMethod.charAt(0).toUpperCase() + config.backgroundMethod.slice(1)} + Fit`}
+              <span className="sm:hidden">Raw + Fit</span>
+              <span className="hidden sm:inline">
+                Raw +{' '}
+                {config.backgroundMethod === 'none'
+                  ? 'Envelope'
+                  : `${
+                      config.backgroundMethod.charAt(0).toUpperCase() +
+                      config.backgroundMethod.slice(1)
+                    } + Fit`}
+              </span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode('subtracted')}
-              className={`px-2.5 py-1 rounded-md transition ${
+              className={`px-2 sm:px-2.5 py-1 rounded-md transition ${
                 viewMode === 'subtracted'
                   ? 'bg-deepblue-800 text-white shadow-sm font-semibold'
                   : 'text-deepblue-900 hover:text-bubblegum-600'
               }`}
             >
-              BG-Subtracted
+              <span className="sm:hidden">Subtracted</span>
+              <span className="hidden sm:inline">BG-Subtracted</span>
             </button>
           </div>
 
           <button
             type="button"
             onClick={() => setShowIndividualPeaks(!showIndividualPeaks)}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
+            className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
               showIndividualPeaks
                 ? 'bg-deepblue-50 border-deepblue-300 text-deepblue-900 font-semibold'
                 : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
             }`}
           >
             {showIndividualPeaks ? (
-              <Eye className="w-3.5 h-3.5 text-deepblue-700" />
+              <Eye className="w-3.5 h-3.5 text-deepblue-700 shrink-0" />
             ) : (
-              <EyeOff className="w-3.5 h-3.5" />
+              <EyeOff className="w-3.5 h-3.5 shrink-0" />
             )}
-            Sub-Peaks ({peaks.length})
+            <span className="sm:hidden">Peaks ({peaks.length})</span>
+            <span className="hidden sm:inline">Sub-Peaks ({peaks.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowCompositeFit(!showCompositeFit)}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
+            className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
               showCompositeFit
                 ? 'bg-bubblegum-50 border-bubblegum-300 text-bubblegum-800 font-semibold'
                 : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-bubblegum-500 inline-block" />
-            Σ Fit (R² = {envelopeRSquared.toFixed(4)})
+            <span className="w-2 h-2 rounded-full bg-bubblegum-500 inline-block shrink-0" />
+            <span className="sm:hidden">Σ Fit</span>
+            <span className="hidden sm:inline">
+              Σ Fit (R² = {envelopeRSquared.toFixed(4)})
+            </span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowResiduals(!showResiduals)}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
+            className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
               showResiduals
                 ? 'bg-deepblue-900 border-deepblue-900 text-white font-semibold'
                 : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
             }`}
           >
-            <Activity className="w-3.5 h-3.5 text-bubblegum-400" />
-            Residuals
+            <Activity className="w-3.5 h-3.5 text-bubblegum-400 shrink-0" />
+            <span>Residuals</span>
           </button>
 
           {referenceMaterial && (
             <button
               type="button"
               onClick={onToggleReferenceOverlay}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
+              className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
                 showReferenceOverlay
                   ? 'bg-gradient-to-r from-deepblue-800 to-bubblegum-600 border-deepblue-800 text-white'
                   : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
-              NIST Ref: {referenceMaterial.coreLevel}
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span className="sm:hidden">Ref: {referenceMaterial.coreLevel}</span>
+              <span className="hidden sm:inline">
+                NIST Ref: {referenceMaterial.coreLevel}
+              </span>
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-slate-600">
+        <div className="flex items-center gap-2 text-xs text-slate-600 flex-wrap">
           {hoverIndex !== null && x[hoverIndex] !== undefined && (
-            <div className="font-mono bg-deepblue-50 px-2.5 py-1 rounded-md text-deepblue-950 border border-deepblue-200">
+            <div className="font-mono bg-deepblue-50 px-2 py-1 rounded-md text-deepblue-950 border border-deepblue-200 text-[11px] sm:text-xs">
               <span className="font-bold text-deepblue-800">
                 BE: {x[hoverIndex].toFixed(2)} eV
               </span>
-              <span className="mx-1.5 text-slate-300">|</span>
+              <span className="mx-1 text-slate-300">|</span>
               <span className="text-bubblegum-700 font-semibold">
                 KE: {kineticEnergyEv[hoverIndex]?.toFixed(1)} eV
               </span>
-              <span className="mx-1.5 text-slate-300">|</span>
+              <span className="mx-1 text-slate-300">|</span>
               <span>
                 {Math.abs(activeYArray[hoverIndex]) >= 100
                   ? activeYArray[hoverIndex]?.toFixed(0)
@@ -429,17 +462,18 @@ export const XPSViewer: React.FC<XPSViewerProps> = ({
             <button
               type="button"
               onClick={() => setZoomDomain(null)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-deepblue-900 text-white hover:bg-bubblegum-600 font-medium transition"
+              className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg bg-deepblue-900 text-white hover:bg-bubblegum-600 font-medium transition"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Reset Zoom
+              <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+              <span className="sm:hidden">Reset</span>
+              <span className="hidden sm:inline">Reset Zoom</span>
             </button>
           )}
         </div>
       </div>
 
       {/* SVG Canvas (Publication CasaXPS / Avantage Style in Deep Blue & Bubblegum Pink) */}
-      <div className="relative select-none">
+      <div className="relative select-none touch-pan-y">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${width} ${height}`}
@@ -447,6 +481,8 @@ export const XPSViewer: React.FC<XPSViewerProps> = ({
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
+          onTouchStart={handleTouchMove}
+          onTouchMove={handleTouchMove}
           onMouseLeave={() => {
             setHoverIndex(null);
             setDragStartX(null);
@@ -799,6 +835,10 @@ export const XPSViewer: React.FC<XPSViewerProps> = ({
             {peaks.map((peak, idx) => {
               if (peak.centerEv < xMin || peak.centerEv > xMax) return null;
               const px = toSvgX(peak.centerEv);
+              const labelX = Math.max(
+                pad.left + 56,
+                Math.min(width - pad.right - 56, px)
+              );
 
               // Find nearest index for background offset
               const nearIdx = peak.index;
@@ -854,7 +894,7 @@ export const XPSViewer: React.FC<XPSViewerProps> = ({
 
                   {/* Binding Energy (eV) */}
                   <text
-                    x={px}
+                    x={labelX}
                     y={arrowStartY - 4}
                     textAnchor="middle"
                     fill={isSelected ? '#e6177c' : '#0a1e5c'}
@@ -868,7 +908,7 @@ export const XPSViewer: React.FC<XPSViewerProps> = ({
                   {/* Chemical State Label */}
                   {shortState && (
                     <text
-                      x={px}
+                      x={labelX}
                       y={arrowStartY - 16}
                       textAnchor="middle"
                       fill="#153eaf"
@@ -884,49 +924,66 @@ export const XPSViewer: React.FC<XPSViewerProps> = ({
               );
             })}
 
-            {/* Top-Right Publication Annotation Block */}
-            <g transform={`translate(${width - pad.right - 14}, ${pad.top + 22})`}>
-              <text
-                x={0}
-                y={0}
-                textAnchor="end"
-                fill="#0a1e5c"
-                fontSize="13"
-                fontFamily="Inter, system-ui, sans-serif"
-                fontWeight="800"
-              >
-                {sampleName}
-              </text>
-              <text
-                x={0}
-                y={16}
-                textAnchor="end"
-                fill="#e6177c"
-                fontSize="11"
-                fontFamily="Inter, system-ui, sans-serif"
-                fontWeight="700"
-              >
-                {coreLevel} • {materialFormula} •{' '}
-                {config.xraySource === 'Al-Ka'
-                  ? 'Al Kα (1486.6 eV)'
-                  : 'Mg Kα (1253.6 eV)'}
-              </text>
-              <text
-                x={0}
-                y={31}
-                textAnchor="end"
-                fill="#475569"
-                fontSize="10.5"
-                fontFamily="JetBrains Mono, monospace"
-                fontWeight="600"
-              >
-                {config.backgroundMethod.toUpperCase()} BG •{' '}
-                {config.fitShape === 'pseudo-voigt'
-                  ? `GL(${config.glMixRatio})`
-                  : config.fitShape}{' '}
-                • R² = {envelopeRSquared.toFixed(4)}
-              </text>
-            </g>
+            {/* Adaptive Publication Annotation Block */}
+            {(() => {
+              const tallestPeak =
+                peaks.length > 0
+                  ? [...peaks].sort((a, b) => b.amplitude - a.amplitude)[0]
+                  : null;
+              const tallestPx = tallestPeak
+                ? toSvgX(tallestPeak.centerEv)
+                : pad.left;
+              const placeLeft = tallestPx > pad.left + plotW * 0.54;
+              const anchorX = placeLeft
+                ? pad.left + 14
+                : width - pad.right - 14;
+              const textAnchor = placeLeft ? 'start' : 'end';
+
+              return (
+                <g transform={`translate(${anchorX}, ${pad.top + 22})`}>
+                  <text
+                    x={0}
+                    y={0}
+                    textAnchor={textAnchor}
+                    fill="#0a1e5c"
+                    fontSize="13"
+                    fontFamily="Inter, system-ui, sans-serif"
+                    fontWeight="800"
+                  >
+                    {sampleName}
+                  </text>
+                  <text
+                    x={0}
+                    y={16}
+                    textAnchor={textAnchor}
+                    fill="#e6177c"
+                    fontSize="11"
+                    fontFamily="Inter, system-ui, sans-serif"
+                    fontWeight="700"
+                  >
+                    {coreLevel} • {materialFormula} •{' '}
+                    {config.xraySource === 'Al-Ka'
+                      ? 'Al Kα (1486.6 eV)'
+                      : 'Mg Kα (1253.6 eV)'}
+                  </text>
+                  <text
+                    x={0}
+                    y={31}
+                    textAnchor={textAnchor}
+                    fill="#475569"
+                    fontSize="10.5"
+                    fontFamily="JetBrains Mono, monospace"
+                    fontWeight="600"
+                  >
+                    {config.backgroundMethod.toUpperCase()} BG •{' '}
+                    {config.fitShape === 'pseudo-voigt'
+                      ? `GL(${config.glMixRatio})`
+                      : config.fitShape}{' '}
+                    • R² = {envelopeRSquared.toFixed(4)}
+                  </text>
+                </g>
+              );
+            })()}
 
             {/* Hover Crosshair */}
             {hoverIndex !== null && x[hoverIndex] !== undefined && (

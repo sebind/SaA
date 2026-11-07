@@ -803,7 +803,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800 overflow-x-hidden">
       {/* Header Bar with Multi-Spectra Toggle Buttons */}
       <header
         className={`bg-white border-b sticky top-0 z-20 transition-colors ${
@@ -816,11 +816,11 @@ export function App() {
             : 'border-slate-200'
         }`}
       >
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 min-h-[3.5rem] py-1.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 min-h-[3.5rem] py-2 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           {/* Brand Logo & Title */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 order-1 min-w-0">
             <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-sm transition-colors ${
+              className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-white shadow-sm transition-colors ${
                 isUvVisTheme
                   ? 'bg-gradient-to-br from-powder-500 to-racing-500'
                   : isXpsTheme
@@ -840,9 +840,9 @@ export function App() {
                 <Activity className="w-4 h-4" />
               )}
             </div>
-            <div className="flex items-baseline gap-2.5">
+            <div className="flex items-baseline gap-2 min-w-0">
               <h1
-                className={`font-gibed-title text-xl font-extrabold tracking-tight bg-clip-text text-transparent ${
+                className={`font-gibed-title text-xl font-extrabold tracking-tight bg-clip-text text-transparent shrink-0 ${
                   isUvVisTheme
                     ? 'bg-gradient-to-r from-powder-700 via-powder-600 to-racing-500'
                     : isXpsTheme
@@ -855,7 +855,7 @@ export function App() {
                 aiSA
               </h1>
               <span
-                className={`text-xs font-medium hidden md:inline ${
+                className={`text-xs font-medium hidden xl:inline truncate ${
                   isUvVisTheme
                     ? 'text-powder-800/85'
                     : isXpsTheme
@@ -873,7 +873,7 @@ export function App() {
           {/* Top Navigation Buttons to Toggle Between Different Spectra Analysis */}
           <nav
             aria-label="Spectroscopy Techniques"
-            className={`inline-flex items-center gap-1 p-1 rounded-xl border ${
+            className={`order-3 md:order-2 w-full md:w-auto grid grid-cols-4 md:inline-flex items-center gap-1 p-1 rounded-xl border ${
               isUvVisTheme
                 ? 'bg-powder-50 border-powder-200'
                 : isXpsTheme
@@ -889,14 +889,14 @@ export function App() {
                 setActiveModule('raman');
                 setErrorBanner(null);
               }}
-              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              className={`inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition truncate ${
                 activeModule === 'raman'
                   ? 'bg-gradient-to-r from-purple-600 to-violet-800 text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
               }`}
             >
               <Activity className="w-3.5 h-3.5 shrink-0" />
-              <span>Raman</span>
+              <span className="truncate">Raman</span>
             </button>
 
             <button
@@ -905,15 +905,15 @@ export function App() {
                 setActiveModule('uvvis');
                 setErrorBanner(null);
               }}
-              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              className={`inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition truncate ${
                 activeModule === 'uvvis'
                   ? 'bg-gradient-to-r from-racing-500 to-racing-600 text-white shadow-sm'
                   : 'text-slate-600 hover:text-racing-600 hover:bg-white/70'
               }`}
             >
               <Sun className="w-3.5 h-3.5 shrink-0" />
-              <span className="sm:hidden">UVVis</span>
-              <span className="hidden sm:inline">UV-Vis-NIR</span>
+              <span className="lg:hidden truncate">UV-Vis</span>
+              <span className="hidden lg:inline truncate">UV-Vis-NIR</span>
             </button>
 
             <button
@@ -922,14 +922,14 @@ export function App() {
                 setActiveModule('xps');
                 setErrorBanner(null);
               }}
-              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              className={`inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition truncate ${
                 activeModule === 'xps'
                   ? 'bg-gradient-to-r from-deepblue-800 to-bubblegum-500 text-white shadow-sm'
                   : 'text-slate-600 hover:text-bubblegum-600 hover:bg-white/70'
               }`}
             >
               <Atom className="w-3.5 h-3.5 shrink-0" />
-              <span>XPS</span>
+              <span className="truncate">XPS</span>
             </button>
 
             <button
@@ -938,20 +938,20 @@ export function App() {
                 setActiveModule('pl');
                 setErrorBanner(null);
               }}
-              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              className={`inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition truncate ${
                 activeModule === 'pl'
                   ? 'bg-gradient-to-r from-maroon-800 to-sage-600 text-white shadow-sm'
                   : 'text-slate-600 hover:text-maroon-800 hover:bg-white/70'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span className="sm:hidden">PL</span>
-              <span className="hidden sm:inline">Photoluminescence</span>
+              <span className="lg:hidden truncate">PL</span>
+              <span className="hidden lg:inline truncate">Photoluminescence</span>
             </button>
           </nav>
 
           {/* Export Buttons (Context-aware for Raman, UV-Vis-NIR, XPS, and PL) */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 order-2 md:order-3 shrink-0">
             <button
               type="button"
               onClick={() =>
@@ -974,7 +974,7 @@ export function App() {
                 )
               }
               title="Download Publication-Grade 300 DPI PNG"
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-white text-xs font-medium transition ${
+              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg border bg-white text-xs font-medium transition ${
                 isUvVisTheme
                   ? 'border-powder-300 text-slate-700 hover:bg-powder-50 hover:border-racing-300 hover:text-racing-700'
                   : isXpsTheme
@@ -985,7 +985,7 @@ export function App() {
               }`}
             >
               <ImageIcon
-                className={`w-3.5 h-3.5 ${
+                className={`w-3.5 h-3.5 shrink-0 ${
                   isUvVisTheme
                     ? 'text-racing-500'
                     : isXpsTheme
@@ -995,7 +995,8 @@ export function App() {
                     : 'text-purple-600'
                 }`}
               />
-              <span>PNG (300 DPI)</span>
+              <span className="lg:hidden">PNG</span>
+              <span className="hidden lg:inline">PNG (300 DPI)</span>
             </button>
 
             <button
@@ -1018,7 +1019,8 @@ export function App() {
                     : activeSample.name
                 )
               }
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-white text-xs font-medium transition ${
+              title="Download Scalable Vector Graphic (SVG)"
+              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg border bg-white text-xs font-medium transition ${
                 isUvVisTheme
                   ? 'border-powder-300 text-slate-700 hover:bg-powder-50 hover:border-racing-300 hover:text-racing-700'
                   : isXpsTheme
@@ -1029,7 +1031,7 @@ export function App() {
               }`}
             >
               <FileCode
-                className={`w-3.5 h-3.5 ${
+                className={`w-3.5 h-3.5 shrink-0 ${
                   isUvVisTheme
                     ? 'text-racing-500'
                     : isXpsTheme
@@ -1077,7 +1079,8 @@ export function App() {
                   );
                 }
               }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition shadow-sm ${
+              title="Export Full Processed Data & Peak Table to CSV"
+              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition shadow-sm ${
                 isUvVisTheme
                   ? 'bg-gradient-to-r from-racing-500 to-racing-600 hover:from-racing-600 hover:to-racing-700'
                   : isXpsTheme
@@ -1087,7 +1090,7 @@ export function App() {
                   : 'bg-gradient-to-r from-purple-600 to-violet-800 hover:from-purple-700 hover:to-violet-900'
               }`}
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 shrink-0" />
               <span>CSV</span>
             </button>
           </div>
@@ -1095,16 +1098,16 @@ export function App() {
       </header>
 
       {errorBanner && (
-        <div className="max-w-[1440px] mx-auto w-full px-4 sm:px-6 pt-3">
-          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3.5 py-2 rounded-lg text-xs flex items-center justify-between">
-            <span className="inline-flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
-              {errorBanner}
+        <div className="max-w-[1440px] mx-auto w-full px-3 sm:px-6 pt-3">
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3.5 py-2 rounded-lg text-xs flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-2 min-w-0">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span className="break-words">{errorBanner}</span>
             </span>
             <button
               type="button"
               onClick={() => setErrorBanner(null)}
-              className="text-amber-700 hover:underline font-medium"
+              className="text-amber-700 hover:underline font-medium shrink-0"
             >
               Dismiss
             </button>
@@ -1114,7 +1117,7 @@ export function App() {
 
       {/* Main Content Area */}
       {activeModule === 'raman' && (
-        <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row gap-4">
+        <main className="flex-1 max-w-[1440px] w-full mx-auto px-3 sm:px-6 py-3 sm:py-4 flex flex-col lg:flex-row gap-4">
           <ProcessingSidebar
             config={config}
             onChangeConfig={handleUpdateConfig}
@@ -1168,7 +1171,7 @@ export function App() {
       )}
 
       {activeModule === 'uvvis' && (
-        <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row gap-4">
+        <main className="flex-1 max-w-[1440px] w-full mx-auto px-3 sm:px-6 py-3 sm:py-4 flex flex-col lg:flex-row gap-4">
           <UVVisSidebar
             config={uvConfig}
             onChangeConfig={handleUpdateUvConfig}
@@ -1211,7 +1214,7 @@ export function App() {
       )}
 
       {activeModule === 'xps' && (
-        <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row gap-4">
+        <main className="flex-1 max-w-[1440px] w-full mx-auto px-3 sm:px-6 py-3 sm:py-4 flex flex-col lg:flex-row gap-4">
           <XPSSidebar
             config={xpsConfig}
             onChangeConfig={handleUpdateXpsConfig}
@@ -1264,7 +1267,7 @@ export function App() {
       )}
 
       {activeModule === 'pl' && (
-        <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row gap-4">
+        <main className="flex-1 max-w-[1440px] w-full mx-auto px-3 sm:px-6 py-3 sm:py-4 flex flex-col lg:flex-row gap-4">
           <PLSidebar
             config={plConfig}
             onChangeConfig={handleUpdatePlConfig}
