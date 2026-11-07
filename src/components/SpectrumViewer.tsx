@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { PeakData, ReferenceMaterial } from '../types/spectrum';
 import { evaluatePeakProfile } from '../utils/ramanMath';
 import { RotateCcw, Eye, EyeOff, Layers } from 'lucide-react';
@@ -67,6 +67,11 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
   const fullXMin = x.length > 0 ? x[0] : 100;
   const fullXMax = x.length > 0 ? x[x.length - 1] : 3000;
   const [xMin, xMax] = zoomDomain || [fullXMin, fullXMax];
+
+  useEffect(() => {
+    setZoomDomain(null);
+    setHoverIndex(null);
+  }, [sampleName, fullXMin, fullXMax]);
 
   const visibleIndices = useMemo(() => {
     const indices: number[] = [];

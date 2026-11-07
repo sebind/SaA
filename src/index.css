@@ -48,3 +48,8 @@ input[type='range'] {
 input[type='range'].range-racing-orange {
   accent-color: #ff4f00;
 }
+
+/* Range input styling in Bubblegum Pink (XPS) */
+input[type='range'].range-bubblegum {
+  accent-color: #ff2e93;
+}

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ProcessingConfig, ReferenceMaterial, SampleDataset } from './types/spectrum';
 import { UVVisConfig, UVVisSampleDataset } from './types/uvvis';
+import { XPSConfig, XPSCoreLevelReference, XPSSampleDataset } from './types/xps';
 import {
   REFERENCE_MATERIALS,
   SAMPLE_DATASETS,
@@ -8,12 +9,21 @@ import {
   VibrationalEntry
 } from './data/ramanReferenceData';
 import { UVVIS_SAMPLE_DATASETS } from './data/uvvisReferenceData';
+import {
+  XPS_CORE_LEVEL_REFERENCES,
+  XPS_SAMPLE_DATASETS
+} from './data/xpsReferenceData';
 import { parseSpectrumText, runRamanPipeline } from './utils/ramanMath';
 import {
   exportUVVisAnalysisToCSV,
   parseUVVisSpectrumText,
   runUVVisPipeline
 } from './utils/uvvisMath';
+import {
+  exportXPSAnalysisToCSV,
+  parseXPSSpectrumText,
+  runXPSPipeline
+} from './utils/xpsMath';
 import { parseReferenceExcelBuffer } from './utils/excelReference';
 import { parseOuluRamanDbYaml } from './utils/ouluRamanDb';
 import {
@@ -32,6 +42,9 @@ import { PeakAnalysisPanel } from './components/PeakAnalysisPanel';
 import { UVVisSidebar } from './components/UVVisSidebar';
 import { UVVisViewer } from './components/UVVisViewer';
 import { UVVisAnalysisPanel } from './components/UVVisAnalysisPanel';
+import { XPSSidebar } from './components/XPSSidebar';
+import { XPSViewer } from './components/XPSViewer';
+import { XPSAnalysisPanel } from './components/XPSAnalysisPanel';
 import {
   Activity,
   Download,
@@ -67,6 +80,25 @@ const DEFAULT_UVVIS_CONFIG: UVVisConfig = {
   useBaselineOffset: false,
   autoFit: true,
   manualEnergyRange: null
+};
+
+const DEFAULT_XPS_CONFIG: XPSConfig = {
+  xraySource: 'Al-Ka',
+  chargeShiftEv: 0.0,
+  reversedAxis: true,
+  backgroundMethod: 'shirley',
+  tougaardB: 2866,
+  smoothMethod: 'savgol',
+  smoothWindow: 5,
+  normMethod: 'none',
+  autoFit: true,
+  fitShape: 'pseudo-voigt',
+  glMixRatio: 30,
+  prominence: 0.06,
+  minDistanceEv: 0.95,
+  maxComponents: 6,
+  enableShoulderDetection: true,
+  customPeakSeeds: []
 };
 
 function buildSeedRamanLabEntries(): RamanLabEntry[] {
@@ -139,8 +171,22 @@ export function App() {
   );
   const [uvConfig, setUvConfig] = useState<UVVisConfig>(DEFAULT_UVVIS_CONFIG);
 
+  // --- XPS State ---
+  const [xpsSamples, setXpsSamples] = useState<XPSSampleDataset[]>(XPS_SAMPLE_DATASETS);
+  const [activeXpsSampleId, setActiveXpsSampleId] = useState<string>(
+    XPS_SAMPLE_DATASETS[0].id
+  );
+  const [xpsConfig, setXpsConfig] = useState<XPSConfig>(DEFAULT_XPS_CONFIG);
+  const [selectedXpsPeakId, setSelectedXpsPeakId] = useState<string | null>(null);
+  const [xpsReferences] = useState<XPSCoreLevelReference[]>(XPS_CORE_LEVEL_REFERENCES);
+  const [selectedXpsRefId, setSelectedXpsRefId] = useState<string>(
+    XPS_SAMPLE_DATASETS[0].referenceId
+  );
+  const [showXpsRefOverlay, setShowXpsRefOverlay] = useState<boolean>(true);
+
   const ramanSvgRef = useRef<SVGSVGElement>(null);
   const uvvisSvgRef = useRef<SVGSVGElement>(null);
+  const xpsSvgRef = useRef<SVGSVGElement>(null);
 
   // Automatically load ./reference_data.xlsx and ./RamanLab_Database_20250602.pkl if present
   useEffect(() => {
@@ -223,6 +269,46 @@ export function App() {
     if (eArr.length === 0) return [1.2, 4.2];
     return [Math.min(...eArr), Math.max(...eArr)];
   }, [uvPipelineResult.photonEnergyEv]);
+
+  // --- XPS Memoized Pipeline ---
+  const activeXpsSample = useMemo(
+    () => xpsSamples.find((s) => s.id === activeXpsSampleId) || xpsSamples[0],
+    [xpsSamples, activeXpsSampleId]
+  );
+
+  const activeXpsReference = useMemo(
+    () =>
+      xpsReferences.find((r) => r.id === selectedXpsRefId) ||
+      xpsReferences.find(
+        (r) =>
+          r.coreLevel.toLowerCase() === activeXpsSample.coreLevel.toLowerCase()
+      ) ||
+      xpsReferences[0],
+    [xpsReferences, selectedXpsRefId, activeXpsSample.coreLevel]
+  );
+
+  const xpsPipelineResult = useMemo(() => {
+    return runXPSPipeline(
+      activeXpsSample.bindingEnergyEv,
+      activeXpsSample.intensityCps,
+      xpsConfig,
+      activeXpsSample.coreLevel
+    );
+  }, [activeXpsSample, xpsConfig]);
+
+  const xpsBeBoundsEv = useMemo<[number, number]>(() => {
+    const arr = xpsPipelineResult.shiftedBeEv;
+    if (arr.length === 0) return [280, 294];
+    return [Math.min(...arr), Math.max(...arr)];
+  }, [xpsPipelineResult.shiftedBeEv]);
+
+  const dominantXpsPeakBeEv = useMemo<number | null>(() => {
+    if (xpsPipelineResult.peaks.length === 0) return null;
+    const sorted = [...xpsPipelineResult.peaks].sort(
+      (a, b) => b.atomicPercent - a.atomicPercent
+    );
+    return sorted[0].centerEv;
+  }, [xpsPipelineResult.peaks]);
 
   // --- Raman Handlers ---
   const handleUpdateConfig = (partial: Partial<ProcessingConfig>) => {
@@ -455,13 +541,113 @@ export function App() {
   };
 
   const isUvVisTheme = activeModule === 'uvvis';
+  const isXpsTheme = activeModule === 'xps';
+
+  // --- XPS Handlers ---
+  const handleUpdateXpsConfig = (partial: Partial<XPSConfig>) => {
+    setXpsConfig((prev) => ({ ...prev, ...partial }));
+  };
+
+  const handleSelectXpsSample = (sample: XPSSampleDataset) => {
+    setActiveXpsSampleId(sample.id);
+    setSelectedXpsRefId(sample.referenceId);
+    setSelectedXpsPeakId(null);
+    setXpsConfig((prev) => ({
+      ...prev,
+      xraySource: sample.xraySource,
+      chargeShiftEv: sample.defaultChargeShiftEv,
+      prominence: sample.defaultProminence,
+      minDistanceEv: sample.defaultMinDistanceEv,
+      glMixRatio: sample.defaultGlMix,
+      autoFit: true,
+      customPeakSeeds: []
+    }));
+    setErrorBanner(null);
+  };
+
+  const handleXpsFileUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = String(event.target?.result || '');
+        const { bindingEnergyEv, intensityCps } = parseXPSSpectrumText(text);
+        const cleanName = file.name.replace(/\.(csv|txt|dat|tsv)$/i, '');
+
+        // Infer core level from Binding Energy range
+        const midBe =
+          (bindingEnergyEv[0] + bindingEnergyEv[bindingEnergyEv.length - 1]) / 2;
+        let guessedCore = 'Core Level';
+        let guessedRefId = selectedXpsRefId;
+        if (midBe >= 278 && midBe <= 296) {
+          guessedCore = 'C 1s';
+          guessedRefId = 'c1s-go-ref';
+        } else if (midBe >= 524 && midBe <= 538) {
+          guessedCore = 'O 1s';
+          guessedRefId = 'o1s-oxide-ref';
+        } else if (midBe >= 450 && midBe <= 470) {
+          guessedCore = 'Ti 2p';
+          guessedRefId = 'ti2p-tio2-ref';
+        } else if (midBe >= 222 && midBe <= 242) {
+          guessedCore = 'Mo 3d';
+          guessedRefId = 'mo3d-mos2-ref';
+        } else if (midBe >= 95 && midBe <= 108) {
+          guessedCore = 'Si 2p';
+          guessedRefId = 'si2p-sio2-ref';
+        } else if (midBe >= 394 && midBe <= 407) {
+          guessedCore = 'N 1s';
+          guessedRefId = 'n1s-ndoped-ref';
+        }
+
+        const customSample: XPSSampleDataset = {
+          id: `xps-custom-${Date.now()}`,
+          name: cleanName,
+          subtitle: `${bindingEnergyEv.length} pts`,
+          coreLevel: guessedCore,
+          materialFormula: cleanName,
+          xraySource: xpsConfig.xraySource,
+          passEnergyEv: 20,
+          referenceId: guessedRefId,
+          defaultChargeShiftEv: 0,
+          defaultProminence: 0.07,
+          defaultMinDistanceEv: 0.95,
+          defaultGlMix: 30,
+          notes: `Uploaded XPS spectrum (${file.name}, ${bindingEnergyEv.length} points).`,
+          bindingEnergyEv,
+          intensityCps
+        };
+
+        setXpsSamples((prev) => [customSample, ...prev.slice(0, 5)]);
+        setActiveXpsSampleId(customSample.id);
+        setSelectedXpsRefId(guessedRefId);
+        setSelectedXpsPeakId(null);
+        setXpsConfig((prev) => ({
+          ...prev,
+          chargeShiftEv: 0,
+          autoFit: true,
+          customPeakSeeds: []
+        }));
+        setErrorBanner(null);
+      } catch (err) {
+        setErrorBanner(
+          err instanceof Error
+            ? err.message
+            : 'Unable to parse XPS spectrum file.'
+        );
+      }
+    };
+    reader.readAsText(file);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
       {/* Header Bar with Multi-Spectra Toggle Buttons */}
       <header
         className={`bg-white border-b sticky top-0 z-20 transition-colors ${
-          isUvVisTheme ? 'border-powder-200' : 'border-slate-200'
+          isUvVisTheme
+            ? 'border-powder-200'
+            : isXpsTheme
+            ? 'border-deepblue-200'
+            : 'border-slate-200'
         }`}
       >
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 min-h-[3.5rem] py-1.5 flex flex-wrap items-center justify-between gap-3">
@@ -471,11 +657,15 @@ export function App() {
               className={`w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-sm transition-colors ${
                 isUvVisTheme
                   ? 'bg-gradient-to-br from-powder-500 to-racing-500'
+                  : isXpsTheme
+                  ? 'bg-gradient-to-br from-deepblue-800 via-deepblue-700 to-bubblegum-500'
                   : 'bg-gradient-to-br from-purple-600 to-violet-900'
               }`}
             >
               {isUvVisTheme ? (
                 <Sun className="w-4 h-4" />
+              ) : isXpsTheme ? (
+                <Atom className="w-4 h-4" />
               ) : (
                 <Activity className="w-4 h-4" />
               )}
@@ -485,6 +675,8 @@ export function App() {
                 className={`font-gibed-title text-xl font-extrabold tracking-tight bg-clip-text text-transparent ${
                   isUvVisTheme
                     ? 'bg-gradient-to-r from-powder-700 via-powder-600 to-racing-500'
+                    : isXpsTheme
+                    ? 'bg-gradient-to-r from-deepblue-900 via-deepblue-700 to-bubblegum-500'
                     : 'bg-gradient-to-r from-purple-600 to-violet-900'
                 }`}
               >
@@ -492,7 +684,11 @@ export function App() {
               </h1>
               <span
                 className={`text-xs font-medium hidden md:inline ${
-                  isUvVisTheme ? 'text-powder-800/85' : 'text-violet-900/75'
+                  isUvVisTheme
+                    ? 'text-powder-800/85'
+                    : isXpsTheme
+                    ? 'text-deepblue-800/85'
+                    : 'text-violet-900/75'
                 }`}
               >
                 agentic intelligence for spectra analysis
@@ -506,6 +702,8 @@ export function App() {
             className={`inline-flex items-center gap-1 p-1 rounded-xl border ${
               isUvVisTheme
                 ? 'bg-powder-50 border-powder-200'
+                : isXpsTheme
+                ? 'bg-deepblue-50/80 border-deepblue-200'
                 : 'bg-slate-100/90 border-slate-200'
             }`}
           >
@@ -549,8 +747,8 @@ export function App() {
               }}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                 activeModule === 'xps'
-                  ? 'bg-slate-800 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                  ? 'bg-gradient-to-r from-deepblue-800 to-bubblegum-500 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-bubblegum-600 hover:bg-white/70'
               }`}
             >
               <Atom className="w-3.5 h-3.5" />
@@ -574,8 +772,10 @@ export function App() {
             </button>
           </nav>
 
-          {/* Export Buttons (Context-aware for Raman vs UV-Vis-NIR) */}
-          {(activeModule === 'raman' || activeModule === 'uvvis') && (
+          {/* Export Buttons (Context-aware for Raman, UV-Vis-NIR, and XPS) */}
+          {(activeModule === 'raman' ||
+            activeModule === 'uvvis' ||
+            activeModule === 'xps') && (
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -583,9 +783,13 @@ export function App() {
                   exportSvgElementToPNG(
                     activeModule === 'uvvis'
                       ? uvvisSvgRef.current
+                      : activeModule === 'xps'
+                      ? xpsSvgRef.current
                       : ramanSvgRef.current,
                     activeModule === 'uvvis'
                       ? activeUvSample.name
+                      : activeModule === 'xps'
+                      ? activeXpsSample.name
                       : activeSample.name,
                     300
                   )
@@ -594,12 +798,18 @@ export function App() {
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-white text-xs font-medium transition ${
                   isUvVisTheme
                     ? 'border-powder-300 text-slate-700 hover:bg-powder-50 hover:border-racing-300 hover:text-racing-700'
+                    : isXpsTheme
+                    ? 'border-deepblue-200 text-deepblue-900 hover:bg-bubblegum-50 hover:border-bubblegum-300 hover:text-bubblegum-700'
                     : 'border-slate-200 text-slate-700 hover:bg-purple-50 hover:border-purple-200 hover:text-violet-800'
                 }`}
               >
                 <ImageIcon
                   className={`w-3.5 h-3.5 ${
-                    isUvVisTheme ? 'text-racing-500' : 'text-purple-600'
+                    isUvVisTheme
+                      ? 'text-racing-500'
+                      : isXpsTheme
+                      ? 'text-bubblegum-500'
+                      : 'text-purple-600'
                   }`}
                 />
                 <span>PNG (300 DPI)</span>
@@ -611,21 +821,31 @@ export function App() {
                   exportSvgElementToSVG(
                     activeModule === 'uvvis'
                       ? uvvisSvgRef.current
+                      : activeModule === 'xps'
+                      ? xpsSvgRef.current
                       : ramanSvgRef.current,
                     activeModule === 'uvvis'
                       ? activeUvSample.name
+                      : activeModule === 'xps'
+                      ? activeXpsSample.name
                       : activeSample.name
                   )
                 }
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-white text-xs font-medium transition ${
                   isUvVisTheme
                     ? 'border-powder-300 text-slate-700 hover:bg-powder-50 hover:border-racing-300 hover:text-racing-700'
+                    : isXpsTheme
+                    ? 'border-deepblue-200 text-deepblue-900 hover:bg-bubblegum-50 hover:border-bubblegum-300 hover:text-bubblegum-700'
                     : 'border-slate-200 text-slate-700 hover:bg-purple-50 hover:border-purple-200 hover:text-violet-800'
                 }`}
               >
                 <FileCode
                   className={`w-3.5 h-3.5 ${
-                    isUvVisTheme ? 'text-racing-500' : 'text-purple-600'
+                    isUvVisTheme
+                      ? 'text-racing-500'
+                      : isXpsTheme
+                      ? 'text-bubblegum-500'
+                      : 'text-purple-600'
                   }`}
                 />
                 <span>SVG</span>
@@ -639,6 +859,13 @@ export function App() {
                       activeUvSample.name,
                       uvConfig,
                       uvPipelineResult
+                    );
+                  } else if (activeModule === 'xps') {
+                    exportXPSAnalysisToCSV(
+                      activeXpsSample.name,
+                      activeXpsSample.coreLevel,
+                      xpsConfig,
+                      xpsPipelineResult
                     );
                   } else {
                     exportAnalysisToCSV(
@@ -655,6 +882,8 @@ export function App() {
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition shadow-sm ${
                   isUvVisTheme
                     ? 'bg-gradient-to-r from-racing-500 to-racing-600 hover:from-racing-600 hover:to-racing-700'
+                    : isXpsTheme
+                    ? 'bg-gradient-to-r from-deepblue-800 to-bubblegum-500 hover:from-deepblue-900 hover:to-bubblegum-600'
                     : 'bg-gradient-to-r from-purple-600 to-violet-800 hover:from-purple-700 hover:to-violet-900'
                 }`}
               >
@@ -782,42 +1011,87 @@ export function App() {
         </main>
       )}
 
-      {(activeModule === 'xps' || activeModule === 'pl') && (
+      {activeModule === 'xps' && (
+        <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row gap-4">
+          <XPSSidebar
+            config={xpsConfig}
+            onChangeConfig={handleUpdateXpsConfig}
+            onResetConfig={() =>
+              setXpsConfig({
+                ...DEFAULT_XPS_CONFIG,
+                xraySource: activeXpsSample.xraySource,
+                chargeShiftEv: activeXpsSample.defaultChargeShiftEv,
+                prominence: activeXpsSample.defaultProminence,
+                minDistanceEv: activeXpsSample.defaultMinDistanceEv,
+                glMixRatio: activeXpsSample.defaultGlMix
+              })
+            }
+            samples={xpsSamples}
+            activeSampleId={activeXpsSample.id}
+            onSelectSample={handleSelectXpsSample}
+            onFileUpload={handleXpsFileUpload}
+            beBoundsEv={xpsBeBoundsEv}
+            dominantPeakBeEv={dominantXpsPeakBeEv}
+          />
+
+          <div className="flex-1 min-w-0 flex flex-col gap-4">
+            <XPSViewer
+              sampleName={activeXpsSample.name}
+              coreLevel={activeXpsSample.coreLevel}
+              materialFormula={activeXpsSample.materialFormula}
+              config={xpsConfig}
+              result={xpsPipelineResult}
+              selectedPeakId={selectedXpsPeakId}
+              onSelectPeak={setSelectedXpsPeakId}
+              referenceMaterial={activeXpsReference}
+              showReferenceOverlay={showXpsRefOverlay}
+              onToggleReferenceOverlay={() => setShowXpsRefOverlay((v) => !v)}
+              svgRef={xpsSvgRef}
+            />
+
+            <XPSAnalysisPanel
+              sampleName={activeXpsSample.name}
+              coreLevel={activeXpsSample.coreLevel}
+              config={xpsConfig}
+              result={xpsPipelineResult}
+              selectedPeakId={selectedXpsPeakId}
+              onSelectPeak={setSelectedXpsPeakId}
+              references={xpsReferences}
+              selectedReferenceId={activeXpsReference?.id || ''}
+              onSelectReferenceId={setSelectedXpsRefId}
+            />
+          </div>
+        </main>
+      )}
+
+      {activeModule === 'pl' && (
         <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-10 flex items-center justify-center">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm max-w-lg w-full p-6 text-center space-y-4">
             <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center mx-auto">
-              {activeModule === 'xps' ? (
-                <Atom className="w-6 h-6" />
-              ) : (
-                <Sparkles className="w-6 h-6" />
-              )}
+              <Sparkles className="w-6 h-6" />
             </div>
             <div>
               <h2 className="font-gibed-title text-lg font-bold text-slate-900">
-                {activeModule === 'xps'
-                  ? 'XPS Core-Level Spectroscopy Module'
-                  : 'Photoluminescence (PL) Spectroscopy Module'}
+                Photoluminescence (PL) Spectroscopy Module
               </h2>
               <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                {activeModule === 'xps'
-                  ? 'Ready for integration: Shirley & Tougaard background subtraction, spin-orbit doublet constraints, and chemical state binding energy indexing.'
-                  : 'Ready for integration: Steady-state emission peak deconvolution, near-band-edge vs. defect emission ratios, and CIE chromaticity coordinates.'}
+                Ready for integration: Steady-state emission peak deconvolution, near-band-edge vs. defect emission ratios, and CIE chromaticity coordinates.
               </p>
             </div>
             <div className="flex items-center justify-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setActiveModule('xps')}
+                className="px-3.5 py-2 rounded-lg bg-gradient-to-r from-deepblue-800 to-bubblegum-500 text-white text-xs font-semibold shadow-sm hover:from-deepblue-900 hover:to-bubblegum-600 transition"
+              >
+                Open XPS Analysis
+              </button>
               <button
                 type="button"
                 onClick={() => setActiveModule('uvvis')}
                 className="px-3.5 py-2 rounded-lg bg-gradient-to-r from-racing-500 to-racing-600 text-white text-xs font-semibold shadow-sm hover:from-racing-600 hover:to-racing-700 transition"
               >
                 Open UV-Vis-NIR Analysis
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveModule('raman')}
-                className="px-3.5 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-violet-800 text-white text-xs font-semibold shadow-sm hover:from-purple-700 hover:to-violet-900 transition"
-              >
-                Open Raman Analysis
               </button>
             </div>
           </div>

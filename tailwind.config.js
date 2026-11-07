@@ -36,6 +36,31 @@ export default {
           800: '#992c00',
           900: '#7a2300',
         },
+        deepblue: {
+          50: '#f0f5ff',
+          100: '#e0ebff',
+          200: '#c2d6ff',
+          300: '#94b8ff',
+          400: '#5c8fff',
+          500: '#2563eb',
+          600: '#1d4ed8',
+          700: '#153eaf', // Deep Royal Blue
+          800: '#0f2c82', // Deep Navy Blue
+          900: '#0a1e5c', // Midnight Deep Blue
+          950: '#061238',
+        },
+        bubblegum: {
+          50: '#fff0f7',
+          100: '#ffe2f0',
+          200: '#ffc4e1',
+          300: '#ff94c8',
+          400: '#ff5ca8', // Soft Bubblegum Pink
+          500: '#ff2e93', // Vibrant Bubblegum Pink
+          600: '#e6177c',
+          700: '#bf0e65',
+          800: '#990b51',
+          900: '#7a0941',
+        },
       },
     },
   },
